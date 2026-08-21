@@ -9,9 +9,27 @@ import uuid
 from datetime import datetime
 from sqlmodel import SQLModel, Field, create_engine, Session
 
-DB_URL = os.getenv("APP_DATABASE_URL", "sqlite:///./harmony_app.db")
-_connect_args = {"check_same_thread": False} if DB_URL.startswith("sqlite") else {}
-engine = create_engine(DB_URL, echo=False, connect_args=_connect_args)
+DB_URL = os.getenv("APP_DATABASE_URL") or os.getenv("DATABASE_URL") or "sqlite:///./harmony_app.db"
+
+# Render (aur Heroku) apna Postgres URL "postgres://" se start karte hain, lekin
+# SQLAlchemy 1.4 ne wo dialect naam HATA diya tha — 2.x par create_engine() seedha
+# NoSuchModuleError phenkta hai aur service kabhi boot hi nahi hoti. Is liye normalize:
+if DB_URL.startswith("postgres://"):
+    DB_URL = DB_URL.replace("postgres://", "postgresql+psycopg2://", 1)
+elif DB_URL.startswith("postgresql://"):
+    DB_URL = DB_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
+
+_is_sqlite = DB_URL.startswith("sqlite")
+_connect_args = {"check_same_thread": False} if _is_sqlite else {}
+
+# pool_pre_ping: managed Postgres idle connections ko chupke se band kar deta hai.
+# Iske baghair pehli request stale connection par "server closed the connection" deti hai.
+engine = create_engine(
+    DB_URL,
+    echo=False,
+    connect_args=_connect_args,
+    **({} if _is_sqlite else {"pool_pre_ping": True, "pool_recycle": 300}),
+)
 
 
 def _uuid() -> str:

@@ -1,0 +1,50 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+#
+# Render dashboard -> New -> Blueprint -> pick this repo. Render reads this file
+# and creates BOTH the database and the API service.
+#
+# Secrets are marked `sync: false` on purpose: Render prompts for them at deploy
+# time and stores them encrypted. They must never live in this file, which is
+# committed to the repo.
+
+databases:
+  - name: harmony-db
+    databaseName: harmony
+    user: harmony
+    plan: free            # NOTE: Render's free Postgres is DELETED after 90 days.
+    region: oregon        # keep the DB and the service in the SAME region
+
+services:
+  - type: web
+    name: harmony-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    region: oregon
+    plan: starter         # free tier is 512MB and sleeps; see README_RENDER.md
+    healthCheckPath: /healthz
+    autoDeploy: true
+
+    envVars:
+      - key: APP_ENV
+        value: production           # makes auth.py refuse to boot without a real key
+
+      - key: APP_SECRET_KEY
+        generateValue: true         # Render generates a strong value once and keeps it
+
+      - key: APP_DATABASE_URL
+        fromDatabase:
+          name: harmony-db
+          property: connectionString
+
+      # --- set these in the Render dashboard; never commit them ---
+      - key: MISTRAL_API_KEY
+        sync: false
+      - key: QDRANT_URL
+        sync: false
+      - key: QDRANT_API_KEY
+        sync: false
+
+      # Comma-separated origins allowed to call this API.
+      # e.g. https://harmony-web.vercel.app
+      - key: CORS_ORIGINS
+        sync: false

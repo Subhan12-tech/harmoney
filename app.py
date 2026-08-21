@@ -23,6 +23,7 @@ import harmony   # saara agent + Qdrant logic yahan se aata hai
 # --- Enterprise backend: DB + Auth + Org + Docs + Security + Billing + SSO ---
 from datetime import datetime
 from sqlmodel import Session
+from sqlalchemy import text as _sa_text
 from db import init_db, engine, User, Document, Review, HistoryItem
 import routes_auth, routes_org, routes_documents, routes_security, routes_billing, routes_sso, routes_admin
 from routes_auth import audit
@@ -298,6 +299,23 @@ def decision(body: DecisionIn, user: User = Depends(require_role("reviewer")),
     PENDING.pop(body.review_id, None)
     audit(org_id, user.id, "review.rejected", result.get("company", ""))
     return {"status": "rejected", "detail": "Review discarded. Nothing was saved."}
+
+
+@app.get("/healthz", tags=["ops"])
+def healthz():
+    # Render/Railway is path ko baar baar ping karte hain. Sasta rakho: "/" 85KB HTML
+    # return karta hai, wo health check ke liye fizool hai. DB ko ek halka touch dete
+    # hain taake "up but database gone" wali halat bhi pakri jaye.
+    db_ok = True
+    try:
+        with Session(engine) as s:
+            s.exec(_sa_text("SELECT 1"))
+    except Exception:
+        db_ok = False
+    return JSONResponse(
+        {"status": "ok" if db_ok else "degraded", "database": "up" if db_ok else "down"},
+        status_code=200 if db_ok else 503,
+    )
 
 
 import os as _os
