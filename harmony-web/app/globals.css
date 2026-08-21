@@ -1,0 +1,246 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   Design tokens
+   Two skins live side by side and must NOT cross-contaminate.
+   - Marketing skin: #000 ground + Instrument Serif display type.
+     Its values are literal hex, applied per-component.
+   - App skin: #0a0d12 ground + Manrope/Inter. Its values are the
+     custom properties below, consumed by the `app-*` Tailwind
+     colors and by `color-mix()` tints throughout the app UI.
+   ============================================================ */
+:root {
+  --bg: #0a0d12;
+  --bg-elev: #10141b;
+  --surface: rgba(255, 255, 255, 0.035);
+  --surface-2: rgba(255, 255, 255, 0.07);
+  --border: rgba(255, 255, 255, 0.1);
+  --text: #eef1f4;
+  --muted: rgba(238, 241, 244, 0.6);
+  --accent: oklch(0.78 0.12 189);
+  --accent-2: oklch(0.72 0.12 233);
+  --warn: oklch(0.78 0.15 70);
+  --danger: oklch(0.68 0.19 25);
+  /* text that sits on top of a filled --accent surface */
+  --on-accent: #04211e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ---- A11y floor: a visible focus ring on every interactive element ---- */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* The marketing skin has no teal in its palette — ring in its own blue. */
+.marketing-skin a:focus-visible,
+.marketing-skin button:focus-visible {
+  outline-color: #6ea8ff;
+}
+
+/* ---- Custom scrollbar ---- */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #1a1a1a;
+  border-radius: 8px;
+}
+.app-skin ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* ============================================================
+   App-skin primitives
+   ============================================================ */
+.app-skin {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: 14px;
+}
+
+/* Native selects, restyled to match the dark inputs (chevron is inlined
+   so no icon library or extra request is involved). */
+.h-select {
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%237fd9cf' stroke-width='2'%3E%3Cpolyline points='5 8 12 15 19 8'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 30px;
+}
+.h-select option {
+  background: var(--bg-elev);
+  color: var(--text);
+}
+
+/* Kicker: the 11px uppercase label that titles nearly every app card. */
+.kicker {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.app-input {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 11px 13px;
+  color: var(--text);
+  font-size: 14px;
+}
+.app-input::placeholder {
+  color: rgba(238, 241, 244, 0.35);
+}
+
+.app-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+.app-table th {
+  text-align: left;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+.app-table td {
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Modal/popover entrance — the prototype had none; the handoff notes ask
+   for a restrained 120–160ms fade/scale in production. */
+@keyframes app-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.app-pop {
+  animation: app-pop-in 140ms ease-out;
+}
+@keyframes app-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.app-fade {
+  animation: app-fade-in 140ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-pop,
+  .app-fade {
+    animation: none;
+  }
+}
+
+/* Loading placeholders — a slow sweep, not a pulse, so several at once do not
+   strobe. */
+@keyframes app-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+.app-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04),
+    rgba(255, 255, 255, 0.09),
+    rgba(255, 255, 255, 0.04)
+  );
+  background-size: 200% 100%;
+  animation: app-shimmer 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-shimmer {
+    animation: none;
+  }
+}
+
+/* Inline text link inside app-skin prose. */
+.app-link {
+  color: var(--accent);
+}
+.app-link:hover {
+  text-decoration: underline;
+}
+
+/* Indeterminate spinner used while a job is in flight. */
+@keyframes app-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.app-spin {
+  animation: app-spin 900ms linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-spin {
+    animation: none;
+  }
+}
+
+/* Horizontally scrollable region (wide tables, the small-screen nav strip).
+   `contain: paint` is doing real work here: without it Chromium propagates the
+   scrolled content width up to the document, so the whole page gains a
+   horizontal scrollbar even though the region itself clips correctly. */
+.scroll-x {
+  overflow-x: auto;
+  contain: paint;
+}

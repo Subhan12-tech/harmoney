@@ -1,0 +1,32 @@
+python-dotenv==1.2.2
+pydantic==2.13.4
+langgraph==1.2.10
+langchain==1.3.14
+langchain-community==0.4.2
+langchain-text-splitters==1.1.2
+langchain-mistralai==1.1.6
+langchain-qdrant==1.1.0
+qdrant-client==1.19.0
+pypdf==6.15.0
+python-docx==1.2.0
+fastapi==0.141.1
+uvicorn[standard]==0.52.1
+python-multipart==0.0.32
+
+# --- Auth / DB / Security ---
+sqlmodel==0.0.39
+passlib==1.7.4
+# passlib declares NO dependencies and does not pull its own bcrypt backend, so a
+# clean `pip install -r requirements.txt` would ship a server where every signup and
+# login raises at runtime. Declared explicitly on purpose — do not remove.
+bcrypt==5.0.0
+python-jose[cryptography]==3.5.0
+pyotp==2.10.0
+
+# --- Postgres driver (prod). SQLite needs no driver, so this is only used when
+# APP_DATABASE_URL points at postgresql://. ---
+psycopg2-binary==2.9.10
+
+# --- Optional: RAGAS eval ---
+# ragas
+# datasets

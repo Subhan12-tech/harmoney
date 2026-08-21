@@ -1,0 +1,6 @@
+NEXORA INC — INTERNAL ROADMAP NOTE (fictional sample)
+
+Product status: The AI analytics module is experimental. Several enterprise
+features are incomplete. General availability is targeted for Q4 FY2026 at the
+earliest. Please do not describe the module as "production-ready" in any
+external communication until GA is confirmed.

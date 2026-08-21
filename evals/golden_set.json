@@ -1,0 +1,30 @@
+{
+  "history_path": "data/sample/history",
+  "cases": [
+    {
+      "file": "data/sample/drafts/01_clear_inconsistency.txt",
+      "expected_verdict": "inconsistent",
+      "expected_keywords": ["double-digit", "production-ready"]
+    },
+    {
+      "file": "data/sample/drafts/02_consistent.txt",
+      "expected_verdict": "consistent",
+      "expected_keywords": []
+    },
+    {
+      "file": "data/sample/drafts/03_subtle_number_mismatch.txt",
+      "expected_verdict": "inconsistent",
+      "expected_keywords": ["130", "120"]
+    },
+    {
+      "file": "data/sample/drafts/04_multiple_issues.txt",
+      "expected_verdict": "inconsistent",
+      "expected_keywords": ["double-digit", "600", "dividend"]
+    },
+    {
+      "file": "data/sample/drafts/05_new_topic_no_evidence.txt",
+      "expected_verdict": "consistent",
+      "expected_keywords": []
+    }
+  ]
+}
