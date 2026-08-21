@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite*
+db/
+venv/
+.venv/
+__pycache__/
+*.pyc
+.git/
+harmony-web/
+landing/
+node_modules/
+err*.txt
+ERROR.txt
