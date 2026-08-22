@@ -336,8 +336,24 @@ def healthz():
 
 
 import os as _os
+
+# The product UI is harmony-web (Next.js), deployed separately. Once FRONTEND_URL
+# is set, the API root redirects there so this host never serves a second, older
+# interface — having two live UIs is how they drift apart.
+# Unset, it falls back to the built-in single-file dashboard, which keeps a
+# bare API deployment usable on its own.
+FRONTEND_URL = (_os.getenv("FRONTEND_URL") or "").strip().rstrip("/")
+
+
 @app.get("/", response_class=HTMLResponse)
 def home():
+    if FRONTEND_URL:
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(FRONTEND_URL, status_code=307)
+    return _home_fallback()
+
+
+def _home_fallback():
     _path = _os.path.join(_os.path.dirname(__file__), "frontend.html")
     with open(_path, encoding="utf-8") as _f:
         return _f.read()

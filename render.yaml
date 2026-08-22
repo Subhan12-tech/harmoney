@@ -57,3 +57,9 @@ services:
       # e.g. https://harmony-web.vercel.app
       - key: CORS_ORIGINS
         sync: false
+
+      # Where the product UI (harmony-web) is deployed. Once set, this API's
+      # root redirects there instead of serving the built-in fallback dashboard,
+      # so there is only ever one live interface.
+      - key: FRONTEND_URL
+        sync: false

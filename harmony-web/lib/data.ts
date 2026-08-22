@@ -973,10 +973,45 @@ export async function getAnalytics(_orgId: string): Promise<AnalyticsSnapshot> {
    Knowledge graph getter
    ============================================================ */
 
-export async function getGraph(orgId: string): Promise<GraphNodeDef[]> {
-  // The demo workspace has a thinner corpus, so fewer sources surround the draft.
-  if (orgId === "demo") return resolve(GRAPH_NODES.filter((n) => !["n5", "n6"].includes(n.id)));
-  return resolve(GRAPH_NODES);
+export async function getGraph(_orgId: string): Promise<GraphNodeDef[]> {
+  // Real evidence library: one node per source document actually indexed, sized
+  // by how many chunks it contributed. An empty corpus returns an empty graph
+  // rather than a decorative one — a fake constellation here would imply the
+  // system has evidence it does not have.
+  const r = await apiGet<{
+    history: { id: string; company: string; source_file: string; doc_type: string; chunk_count: number }[];
+    total_chunks: number;
+  }>("/api/history");
+
+  const items = r.history ?? [];
+  if (items.length === 0) return [];
+
+  const maxChunks = Math.max(1, ...items.map((h) => h.chunk_count));
+  const sources = items.slice(0, 10);
+
+  const centre: GraphNodeDef = {
+    id: "corpus",
+    label1: "Evidence",
+    label2: `${r.total_chunks} passages`,
+    r: 30,
+    angle: null,
+    statements: [`${items.length} source document${items.length === 1 ? "" : "s"} indexed.`],
+  };
+
+  return [
+    centre,
+    ...sources.map((h, i) => ({
+      id: h.id,
+      label1: (h.source_file || h.company || "Pasted").replace(/\.[^.]+$/, "").slice(0, 18),
+      label2: `${h.chunk_count} passage${h.chunk_count === 1 ? "" : "s"}`,
+      // 14-26px, scaled by contribution so a large filing reads bigger.
+      r: 14 + Math.round((h.chunk_count / maxChunks) * 12),
+      angle: Math.round((360 / sources.length) * i),
+      statements: [
+        `${h.doc_type === "approved" ? "Approved and published" : "Imported"} · ${h.company || "Unknown"}`,
+      ],
+    })),
+  ];
 }
 
 /* ============================================================

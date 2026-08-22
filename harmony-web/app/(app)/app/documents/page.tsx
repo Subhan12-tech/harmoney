@@ -7,6 +7,7 @@ import { useUploads, type UploadKind } from "@/lib/useUploads";
 import { getDocuments, type DocStatus, type DocType, type Severity } from "@/lib/data";
 import { DocTable } from "@/components/app/DocTable";
 import { UploadZone } from "@/components/app/UploadZone";
+import { SubmitDraftPanel } from "@/components/app/SubmitDraftPanel";
 import { UploadList } from "@/components/app/UploadList";
 import { useToast } from "@/components/app/Toast";
 import { ClipboardIcon, DriveIcon, FolderIcon, UploadIcon } from "@/components/app/icons";
@@ -96,7 +97,17 @@ export default function DocumentsPage() {
         toast("Clipboard is empty — copy your draft first.");
         return;
       }
-      addSynthetic("Pasted draft.txt", new Blob([text]).size, "draft");
+      // Hand it to the review panel rather than faking an upload row.
+      const box = document.querySelector<HTMLTextAreaElement>("#check-heading ~ textarea, section textarea");
+      if (box) {
+        const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set;
+        setter?.call(box, text);
+        box.dispatchEvent(new Event("input", { bubbles: true }));
+        box.scrollIntoView({ behavior: "smooth", block: "center" });
+        toast("Draft pasted. Press “Check this document” to run it.");
+      } else {
+        toast("Paste it into the Check a document box above.");
+      }
     } catch {
       // Clipboard read is permission-gated and fails outright in some browsers.
       toast("Clipboard access was blocked. Use “Upload draft” instead.");
@@ -105,6 +116,9 @@ export default function DocumentsPage() {
 
   return (
     <>
+      {/* The one control that actually runs the pipeline. */}
+      <SubmitDraftPanel />
+
       {/* ---- Upload cards ---- */}
       <section aria-label="Add documents">
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-2" style={{ marginBottom: 16 }}>
@@ -158,14 +172,7 @@ export default function DocumentsPage() {
                   <ClipboardIcon size={14} strokeWidth={1.8} />
                   Paste text
                 </button>
-                <button
-                  type="button"
-                  style={pillButton({ ...compactSecondary, background: "transparent" })}
-                  onClick={() => addSynthetic("Q3 Earnings Draft (Drive).docx", 268_400, "draft")}
-                >
-                  <DriveIcon size={14} strokeWidth={1.8} />
-                  From Drive
-                </button>
+
               </>
             }
           />
