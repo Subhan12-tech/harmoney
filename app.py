@@ -329,10 +329,24 @@ def healthz():
             s.exec(_sa_text("SELECT 1"))
     except Exception:
         db_ok = False
-    return JSONResponse(
-        {"status": "ok" if db_ok else "degraded", "database": "up" if db_ok else "down"},
-        status_code=200 if db_ok else 503,
-    )
+
+    # Report the DIALECT, not just reachability. SELECT 1 succeeds on SQLite too,
+    # so a plain "up" hid the worst possible misconfiguration: no APP_DATABASE_URL,
+    # a SQLite file on an ephemeral container disk, and every account silently
+    # lost on the next restart or deploy.
+    dialect = engine.dialect.name
+    ephemeral = dialect == "sqlite" and _APP_ENV == "production"
+
+    body = {
+        "status": "ok" if db_ok and not ephemeral else "degraded",
+        "database": "up" if db_ok else "down",
+        "engine": dialect,
+    }
+    if ephemeral:
+        body["warning"] = ("Running on SQLite in production. This filesystem is ephemeral - "
+                           "every account and review is lost on the next restart or deploy. "
+                           "Set APP_DATABASE_URL to a Postgres connection string.")
+    return JSONResponse(body, status_code=200 if db_ok else 503)
 
 
 import os as _os
