@@ -282,6 +282,35 @@ def _locate_in_draft(quote: str, draft_text: str) -> list[int] | None:
     idx = draft_text.lower().find(quote.lower())
     if idx != -1:
         return [idx, idx + len(quote)]
+
+    # Whitespace-tolerant exact match.
+    # The model re-types a quote with its line breaks collapsed to spaces, so a
+    # clause spanning a wrapped line fails both find() calls above, because the
+    # draft has a newline where the quote has a space. It used to then fall
+    # through to sentence matching - which
+    # returns the WHOLE sentence. That span overlaps the previous issue's, and an
+    # overlapping span gets dropped by the renderer, so the issue silently lost
+    # its highlight. Collapse runs of whitespace while keeping a map back to the
+    # original offsets, so the exact clause is still located precisely.
+    norm_chars, norm_to_orig, prev_ws = [], [], False
+    for i, ch in enumerate(draft_text):
+        if ch.isspace():
+            if prev_ws:
+                continue
+            norm_chars.append(" ")
+            norm_to_orig.append(i)
+            prev_ws = True
+        else:
+            norm_chars.append(ch)
+            norm_to_orig.append(i)
+            prev_ws = False
+    norm = "".join(norm_chars)
+    q_norm = " ".join(quote.split())
+    if q_norm:
+        j = norm.lower().find(q_norm.lower())
+        if j != -1:
+            return [norm_to_orig[j], norm_to_orig[j + len(q_norm) - 1] + 1]
+
     sentences = re.split(r"(?<=[.!?])\s+", draft_text)
     q_words = {w for w in re.findall(r"[a-z0-9]+", quote.lower()) if len(w) > 2}
     if not q_words:
