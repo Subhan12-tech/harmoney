@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BrandPanel } from "@/components/auth/BrandPanel";
+import { ApiError, apiGet, apiPost, saveSession, setUserId, type Session } from "@/lib/api";
 import { WarningIcon } from "@/components/app/icons";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -40,30 +41,49 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  /** Mirrors the lockout counter a real auth service returns. */
-  const [attemptsLeft, setAttemptsLeft] = useState(3);
+  const [submitting, setSubmitting] = useState(false);
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (submitting) return;
 
-    // Credentials that could not possibly be valid are rejected locally; a real
-    // service decides the rest and returns the same shape of error.
-    if (!EMAIL_RE.test(email.trim()) || password.length < 8) {
-      const left = Math.max(0, attemptsLeft - 1);
-      setAttemptsLeft(left);
-      setError(
-        left > 0
-          ? `Incorrect email or password. ${left} attempt${left === 1 ? "" : "s"} remaining before this account is temporarily locked.`
-          : "This account is temporarily locked. Try again in 15 minutes or contact your workspace administrator.",
-      );
+    // Obviously-malformed input is rejected without a round trip. Everything
+    // else is the server's call — the client never decides who is authentic.
+    if (!EMAIL_RE.test(email.trim()) || !password) {
+      setError("Enter your work email and password.");
       return;
     }
 
+    setSubmitting(true);
     setError(null);
-    router.push("/app");
+    try {
+      const session = await apiPost<Session>("/api/auth/login", {
+        email: email.trim(),
+        password,
+      });
+      saveSession(session);
+
+      // Cache the user id so the team list can mark "you"; a failure here is
+      // cosmetic, so it must never block the sign-in.
+      try {
+        const me = await apiGet<{ id: string }>("/api/auth/me");
+        if (me?.id) setUserId(me.id);
+      } catch {
+        /* ignore */
+      }
+
+      router.push("/app");
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Could not sign in. Check your connection and try again.",
+      );
+      setSubmitting(false);
+    }
   }
 
-  const locked = attemptsLeft === 0;
+  const locked = false;
 
   return (
     <div className="app-skin grid min-h-screen lg:grid-cols-[1.1fr_1fr]">
@@ -150,7 +170,7 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={locked}
+              disabled={locked || submitting}
               className="font-heading"
               style={{
                 width: "100%",
@@ -161,12 +181,12 @@ export default function LoginPage() {
                 padding: 12,
                 fontWeight: 700,
                 fontSize: 14.5,
-                cursor: locked ? "not-allowed" : "pointer",
-                opacity: locked ? 0.5 : 1,
+                cursor: locked || submitting ? "not-allowed" : "pointer",
+                opacity: locked || submitting ? 0.6 : 1,
                 boxShadow: "0 8px 24px color-mix(in srgb, var(--accent) 30%, transparent)",
               }}
             >
-              Sign in
+              {submitting ? "Signing in…" : "Sign in"}
             </button>
           </form>
 
@@ -181,7 +201,11 @@ export default function LoginPage() {
               <button
                 key={provider}
                 type="button"
-                onClick={() => router.push("/app")}
+                onClick={() =>
+                  setError(
+                    `${provider === "enterprise SSO" ? "Enterprise SSO" : provider} sign-in is not enabled for this workspace yet. Use your email and password.`,
+                  )
+                }
                 style={ssoButtonStyle}
               >
                 Continue with {provider}

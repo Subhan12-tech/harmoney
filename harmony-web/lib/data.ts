@@ -1,10 +1,26 @@
 /**
- * Seed data for the Harmony product.
+ * Data layer for the Harmony product.
  *
- * There is no backend in this build, but every read is exposed as an `async`
- * function taking the org id it is scoped to, so swapping the bodies for real
- * `fetch` calls is a local change that never touches a call site.
+ * The async getters at the bottom of this file talk to the FastAPI backend.
+ * What remains hard-coded above them is genuinely static: plan definitions,
+ * marketing copy, the settings tab list, permission ranks.
+ *
+ * Anything still returning a local constant is marked SEED — those are the
+ * screens with no backend endpoint behind them yet.
  */
+
+import { ApiError, apiGet, getUserId } from "./api";
+import {
+  toActivity,
+  toDocument,
+  toKpis,
+  toTeamMember,
+  relativeTime,
+  type ApiAudit,
+  type ApiDocument,
+  type ApiMember,
+  type ApiStats,
+} from "./mappers";
 
 /* ============================================================
    Types
@@ -719,51 +735,82 @@ export const PRICING_FAQ = [
   },
 ];
 
+const SEVERITY_TOKEN: Record<Severity, string> = {
+  High: "var(--danger)",
+  Medium: "var(--warn)",
+  Low: "var(--accent-2)",
+};
+
+/** Session rows show a readable device, not a 200-character UA string. */
+function describeUserAgent(ua: string): string {
+  if (!ua) return "Unknown device";
+  const browser = /Edg\//.test(ua) ? "Edge"
+    : /OPR\//.test(ua) ? "Opera"
+    : /Chrome\//.test(ua) ? "Chrome"
+    : /Safari\//.test(ua) ? "Safari"
+    : /Firefox\//.test(ua) ? "Firefox"
+    : "Browser";
+  const os = /Windows/.test(ua) ? "Windows"
+    : /Mac OS X|Macintosh/.test(ua) ? "macOS"
+    : /Android/.test(ua) ? "Android"
+    : /iPhone|iPad/.test(ua) ? "iOS"
+    : /Linux/.test(ua) ? "Linux"
+    : "";
+  return os ? `${browser} on ${os}` : browser;
+}
+
 /* ============================================================
-   Async getters — the seam a real API drops into
+   Async getters — now backed by the real API
+   ------------------------------------------------------------
+   Every function below talks to FastAPI. The signatures are unchanged from the
+   seed-data version on purpose, so no call site had to move. `orgId` is still
+   accepted but the server scopes by the token's org, which is the only scoping
+   a client can be trusted with.
    ============================================================ */
 
 async function resolve<T>(value: T): Promise<T> {
   return value;
 }
 
-export async function getDocuments(orgId: string): Promise<HarmonyDocument[]> {
-  // Scoped by org so data never mixes across workspaces.
-  if (orgId === "demo") return resolve(DOCUMENTS.slice(0, 3));
-  return resolve(DOCUMENTS);
+export async function getDocuments(_orgId: string): Promise<HarmonyDocument[]> {
+  const r = await apiGet<{ documents: ApiDocument[] }>("/api/documents");
+  return (r.documents ?? []).map(toDocument);
 }
 
-export async function getDocument(orgId: string, id: string): Promise<HarmonyDocument | undefined> {
-  const docs = await getDocuments(orgId);
-  return docs.find((d) => d.id === id);
+export async function getDocument(_orgId: string, id: string): Promise<HarmonyDocument | undefined> {
+  try {
+    const r = await apiGet<{ document: ApiDocument }>(`/api/documents/${encodeURIComponent(id)}`);
+    return r.document ? toDocument(r.document) : undefined;
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) return undefined;
+    throw err;
+  }
 }
 
-export async function getPendingApprovals(orgId: string): Promise<HarmonyDocument[]> {
-  const docs = await getDocuments(orgId);
-  return docs.filter((d) => PENDING_APPROVAL_IDS.includes(d.id));
+export async function getPendingApprovals(_orgId: string): Promise<HarmonyDocument[]> {
+  // Filtering server-side keeps the payload small on large workspaces.
+  const r = await apiGet<{ documents: ApiDocument[] }>("/api/documents?status=In%20Review");
+  return (r.documents ?? []).map(toDocument);
 }
 
-export async function getKpis(orgId: string): Promise<Kpi[]> {
-  return resolve(KPIS_BY_ORG[orgId] ?? KPIS);
+export async function getKpis(_orgId: string): Promise<Kpi[]> {
+  return toKpis(await apiGet<ApiStats>("/api/dashboard/stats"));
 }
 
-export async function getTeamActivity(orgId: string): Promise<ActivityEntry[]> {
-  return resolve(orgId === "demo" ? TEAM_ACTIVITY.slice(0, 2) : TEAM_ACTIVITY);
+export async function getTeamActivity(_orgId: string): Promise<ActivityEntry[]> {
+  const r = await apiGet<{ audit: ApiAudit[] }>("/api/audit?limit=25");
+  return (r.audit ?? []).map(toActivity);
 }
 
-export async function getTeamMembers(orgId: string, currentRole: Role): Promise<TeamMember[]> {
-  const org = getOrg(orgId);
-  return resolve(
-    TEAM_MEMBER_SEED.map((m) => ({
-      ...m,
-      // The current user's row always reflects the live role switcher.
-      role: (m.role ?? currentRole) as Role,
-      email: m.email.replace("acme.com", org.website),
-    })),
-  );
+export async function getTeamMembers(_orgId: string, _currentRole: Role): Promise<TeamMember[]> {
+  const r = await apiGet<{ members: ApiMember[] }>("/api/orgs/members");
+  const me = getUserId();
+  return (r.members ?? []).map((m) => toTeamMember(m, me ?? undefined));
 }
 
 export async function getPlans(): Promise<Plan[]> {
+  // Deliberately static: the marketing pricing page renders this with no session,
+  // so it must not require a token.
   return resolve(PLANS);
 }
 
@@ -881,8 +928,43 @@ const ANALYTICS_BY_ORG: Record<string, AnalyticsSnapshot> = {
   },
 };
 
-export async function getAnalytics(orgId: string): Promise<AnalyticsSnapshot> {
-  return resolve(ANALYTICS_BY_ORG[orgId] ?? ANALYTICS_BY_ORG.acme);
+export async function getAnalytics(_orgId: string): Promise<AnalyticsSnapshot> {
+  const a = await apiGet<{
+    severity_breakdown: { label: string; count: number }[];
+    type_breakdown: { label: string; count: number }[];
+    score_trend: { rating: number; at: string }[];
+    review_performance: { name: string; avg_minutes: number; approval_rate: number }[];
+  }>("/api/analytics");
+
+  const maxSeverity = Math.max(1, ...a.severity_breakdown.map((r) => r.count));
+  const maxType = Math.max(1, ...a.type_breakdown.map((r) => r.count));
+
+  return {
+    // Bars are percentages of the largest bucket, so an empty workspace renders
+    // flat rather than dividing by zero.
+    severity: a.severity_breakdown.map((r) => ({
+      label: r.label as Severity,
+      count: r.count,
+      width: Math.round((r.count / maxSeverity) * 100),
+      token: SEVERITY_TOKEN[r.label as Severity] ?? "var(--accent-2)",
+    })),
+    types: a.type_breakdown.map((r) => ({
+      label: r.label,
+      count: r.count,
+      width: Math.round((r.count / maxType) * 100),
+    })),
+    scores: a.score_trend.map((p) => Math.round(p.rating * 10)),
+    months: a.score_trend.map((p) =>
+      new Date(/[Zz]$/.test(p.at) ? p.at : `${p.at.replace(" ", "T")}Z`).toLocaleDateString(undefined, {
+        month: "short",
+      }),
+    ),
+    performance: a.review_performance.map((r) => ({
+      name: r.name,
+      time: r.avg_minutes >= 60 ? `${(r.avg_minutes / 60).toFixed(1)}h` : `${r.avg_minutes}m`,
+      rate: `${r.approval_rate}%`,
+    })),
+  };
 }
 
 /* ============================================================
@@ -900,15 +982,41 @@ export async function getGraph(orgId: string): Promise<GraphNodeDef[]> {
    ============================================================ */
 
 export async function getSessions(_orgId: string) {
-  return resolve(SESSIONS);
+  const r = await apiGet<{
+    sessions: { id: string; user_agent: string; ip: string; last_active: string }[];
+  }>("/api/security/sessions");
+  return (r.sessions ?? []).map((x, i) => ({
+    device: describeUserAgent(x.user_agent),
+    location: "—",           // no geo-IP lookup on the backend; IP is shown instead
+    ip: x.ip || "—",
+    lastActive: i === 0 ? "Active now" : relativeTime(x.last_active),
+    current: i === 0,        // the API orders by last_active desc
+    id: x.id,
+  }));
 }
 
 export async function getSecurityLog(_orgId: string) {
-  return resolve(SECURITY_LOG);
+  const r = await apiGet<{ activity: { action: string; detail: string; at: string }[] }>(
+    "/api/security/activity",
+  );
+  return (r.activity ?? []).map((x) => ({
+    event: x.action.replace(/[._]/g, " ").replace(/^\w/, (c) => c.toUpperCase()),
+    detail: x.detail || "—",
+    time: relativeTime(x.at),
+  }));
 }
 
-export async function getApiKeys(orgId: string) {
-  return resolve(orgId === "demo" ? API_KEYS.slice(0, 1) : API_KEYS);
+export async function getApiKeys(_orgId: string) {
+  const r = await apiGet<{
+    keys: { id: string; name: string; prefix?: string; created_at: string; last_used?: string | null }[];
+  }>("/api/security/api-keys");
+  return (r.keys ?? []).map((k) => ({
+    name: k.name,
+    created: relativeTime(k.created_at),
+    lastUsed: k.last_used ? relativeTime(k.last_used) : "Never",
+    perm: "Read/Write",      // the backend issues a single scope today
+    id: k.id,
+  }));
 }
 
 export async function getIntegrations(_orgId: string) {

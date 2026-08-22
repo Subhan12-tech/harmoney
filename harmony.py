@@ -39,6 +39,22 @@ from qdrant_client.http.models import Distance, VectorParams, Filter, FieldCondi
 load_dotenv()
 
 # ----------------------------------------------------------------------------
+# LangSmith tracing — OFF in production unless someone opts in on purpose.
+# ----------------------------------------------------------------------------
+# LangChain reads LANGCHAIN_TRACING_V2 straight from the environment; no code
+# references it, so it is easy to leave on by accident. When it is on, every
+# draft, every retrieved history chunk and every prompt is sent to LangSmith.
+# For customers' confidential pre-publication disclosures that makes LangSmith a
+# sub-processor they have not agreed to. Default to off, and require an explicit
+# HARMONY_ALLOW_TRACING=true to override.
+if os.getenv("APP_ENV", "development").strip().lower() == "production":
+    if os.getenv("HARMONY_ALLOW_TRACING", "").strip().lower() != "true":
+        if os.environ.pop("LANGCHAIN_TRACING_V2", None) not in (None, "", "false"):
+            print("LangSmith tracing disabled in production (set HARMONY_ALLOW_TRACING=true to keep it).")
+        os.environ["LANGCHAIN_TRACING_V2"] = "false"
+        os.environ.pop("LANGSMITH_TRACING", None)
+
+# ----------------------------------------------------------------------------
 # VECTOR DB (deployable) — Qdrant Cloud
 # ----------------------------------------------------------------------------
 # .env mein:

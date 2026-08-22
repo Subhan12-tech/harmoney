@@ -11,6 +11,7 @@ export const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:80
 const TOKEN_KEY = "harmony.token";
 const ORG_KEY = "harmony.org_id";
 const ROLE_KEY = "harmony.role";
+const USER_KEY = "harmony.user_id";
 
 export type Session = { token: string; org_id: string; role: string };
 
@@ -67,6 +68,22 @@ export function getOrgId(): string | null {
   }
 }
 
+export function getUserId(): string | null {
+  try {
+    return store()?.getItem(USER_KEY) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function setUserId(id: string): void {
+  try {
+    store()?.setItem(USER_KEY, id);
+  } catch {
+    /* non-fatal: only affects "you" highlighting in the team list */
+  }
+}
+
 export function getRole(): string | null {
   try {
     return store()?.getItem(ROLE_KEY) ?? null;
@@ -79,7 +96,7 @@ export function clearSession(): void {
   const s = store();
   if (!s) return;
   try {
-    [TOKEN_KEY, ORG_KEY, ROLE_KEY].forEach((k) => s.removeItem(k));
+    [TOKEN_KEY, ORG_KEY, ROLE_KEY, USER_KEY].forEach((k) => s.removeItem(k));
   } catch {
     /* nothing to clear */
   }

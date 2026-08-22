@@ -2,6 +2,8 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { DEFAULT_ORG_ID, ORGS, ROLE_RANK, ROLES, type Role } from "@/lib/data";
+import { getOrgId, getRole as getSessionRole } from "@/lib/api";
+import { asRole } from "@/lib/mappers";
 
 /**
  * The permission-aware UI across the whole app reads from here.
@@ -48,11 +50,26 @@ export function RoleProvider({ children }: { children: ReactNode }) {
    * values come from the session on the server anyway.
    */
   useEffect(() => {
-    const storedRole = window.sessionStorage.getItem(ROLE_KEY) as Role | null;
-    if (storedRole && ROLES.includes(storedRole)) setRoleState(storedRole);
+    // The signed-in user's real RBAC claim wins. Defaulting to Owner (the old
+    // behaviour) meant a Viewer briefly saw approve/invite/billing controls
+    // they cannot actually use — the backend would reject every one of them.
+    const sessionRole = getSessionRole();
+    if (sessionRole) {
+      const mapped = asRole(sessionRole);
+      if (ROLES.includes(mapped)) setRoleState(mapped);
+    } else {
+      const storedRole = window.sessionStorage.getItem(ROLE_KEY) as Role | null;
+      if (storedRole && ROLES.includes(storedRole)) setRoleState(storedRole);
+    }
 
-    const storedOrg = window.sessionStorage.getItem(ORG_KEY);
-    if (storedOrg && ORGS.some((o) => o.id === storedOrg)) setOrgIdState(storedOrg);
+    // Org comes from the token; the local list is only a display fallback.
+    const sessionOrg = getOrgId();
+    if (sessionOrg) {
+      setOrgIdState(sessionOrg);
+    } else {
+      const storedOrg = window.sessionStorage.getItem(ORG_KEY);
+      if (storedOrg && ORGS.some((o) => o.id === storedOrg)) setOrgIdState(storedOrg);
+    }
   }, []);
 
   const setRole = useCallback((next: Role) => {
