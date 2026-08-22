@@ -63,3 +63,30 @@ services:
       # so there is only ever one live interface.
       - key: FRONTEND_URL
         sync: false
+
+  # ---------------------------------------------------------------------------
+  # Product UI (Next.js). Separate service because it is a Node server, not the
+  # Python image - /app/review/[id] is server-rendered on demand, so this cannot
+  # be a static site.
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: harmony-web
+    runtime: node
+    rootDir: harmony-web
+    region: oregon
+    plan: starter
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start
+    autoDeploy: true
+
+    envVars:
+      # Baked in at BUILD time, not read at runtime - changing it needs a
+      # rebuild, not a restart.
+      #
+      # Entered by hand rather than wired with fromService: that yields a bare
+      # hostname, and this needs a full origin including https://. Set it to the
+      # harmony-api service URL, e.g. https://harmoney.onrender.com
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
+      - key: NODE_VERSION
+        value: "20"
