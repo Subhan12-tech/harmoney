@@ -1313,21 +1313,99 @@ async function changePlan(plan){
 // ============================================================================
 // PLATFORM ADMIN (super-admin only)
 // ============================================================================
+function statusChip(status){
+  const map = {
+    active:    ['var(--accent)','Active'],
+    pending:   ['var(--warn)','Pending'],
+    suspended: ['var(--danger)','Suspended'],
+  };
+  const [c,label] = map[status] || map.pending;
+  return `<span class="chip" style="background:color-mix(in srgb, ${c} 16%, transparent);color:${c};border:1px solid color-mix(in srgb, ${c} 35%, transparent)">${label}</span>`;
+}
+
+// Grant / withdraw access. The gate is checked per request on the server, so a
+// suspension takes effect on the customer's very next action - not next login.
+async function adminApprove(orgId, name){
+  try{
+    await api('/api/admin/orgs/'+encodeURIComponent(orgId)+'/approve', 'POST', {});
+    toast(name + ' approved. They can use Harmony now.');
+    renderAdmin();
+  }catch(e){ toast('Could not approve: ' + String(e)); }
+}
+
+async function adminSuspend(orgId, name){
+  const reason = prompt('Why is ' + name + ' being suspended? This message is shown to them.',
+                        'Subscription lapsed. Contact your account manager to restore access.');
+  if(reason === null) return;
+  try{
+    await api('/api/admin/orgs/'+encodeURIComponent(orgId)+'/suspend', 'POST', {reason});
+    toast(name + ' suspended.');
+    renderAdmin();
+  }catch(e){ toast('Could not suspend: ' + String(e)); }
+}
+
+async function adminReactivate(orgId, name){
+  try{
+    await api('/api/admin/orgs/'+encodeURIComponent(orgId)+'/reactivate', 'POST', {});
+    toast(name + ' reactivated.');
+    renderAdmin();
+  }catch(e){ toast('Could not reactivate: ' + String(e)); }
+}
+
 async function renderAdmin(){
   loadingMain();
   try{
-    const [st, o, u] = await Promise.all([api('/api/admin/stats'), api('/api/admin/orgs'), api('/api/admin/users')]);
+    const [st, o, u, pend] = await Promise.all([
+      api('/api/admin/stats'), api('/api/admin/orgs'), api('/api/admin/users'), api('/api/admin/pending')
+    ]);
+
+    const queue = (pend.pending||[]).map(x=>`
+      <tr>
+        <td>${esc(x.name)}</td>
+        <td class="muted">${esc(x.requested_by_name||'')}${x.requested_by_name?' · ':''}${esc(x.requested_by)}</td>
+        <td class="muted">${esc(timeAgo(x.created_at))}</td>
+        <td style="text-align:right">
+          <button class="btn btn-primary" style="padding:7px 14px;font-size:13px"
+                  onclick="adminApprove('${esc(x.org_id)}','${esc(x.name).replace(/'/g,"&#39;")}')">Approve access</button>
+        </td>
+      </tr>`).join('');
+
+    const rows = (o.organizations||[]).map(x=>{
+      const act = x.status === 'active'
+        ? `<button class="btn btn-danger" style="padding:6px 12px;font-size:12px" onclick="adminSuspend('${esc(x.org_id)}','${esc(x.name).replace(/'/g,"&#39;")}')">Suspend</button>`
+        : x.status === 'pending'
+          ? `<button class="btn btn-primary" style="padding:6px 12px;font-size:12px" onclick="adminApprove('${esc(x.org_id)}','${esc(x.name).replace(/'/g,"&#39;")}')">Approve</button>`
+          : `<button class="btn btn-secondary" style="padding:6px 12px;font-size:12px" onclick="adminReactivate('${esc(x.org_id)}','${esc(x.name).replace(/'/g,"&#39;")}')">Reactivate</button>`;
+      return `<tr>
+        <td>${esc(x.name)}${x.status_reason?`<div class="muted" style="font-size:11px">${esc(x.status_reason)}</div>`:''}</td>
+        <td>${statusChip(x.status)}</td>
+        <td>${x.members}</td>
+        <td><span class="chip chip-neutral">${esc(x.plan)}</span></td>
+        <td style="text-align:right">${act}</td>
+      </tr>`;
+    }).join('');
+
     setMain(`
-      ${pageIntro('Platform Admin', 'An overview of every company using Harmony.')}
+      ${pageIntro('Platform Admin', 'Grant and withdraw access to Harmony. Suspending never deletes data.')}
       <div class="kpiGrid">
         <div class="card card-tight"><div class="kicker">Companies</div><div class="kpiVal">${st.organizations}</div></div>
         <div class="card card-tight"><div class="kicker">Users</div><div class="kpiVal">${st.users}</div></div>
         <div class="card card-tight"><div class="kicker">Documents</div><div class="kpiVal">${st.documents}</div></div>
         <div class="card card-tight"><div class="kicker">Reviews</div><div class="kpiVal">${st.reviews}</div></div>
       </div>
-      <div class="card"><div class="kicker">Companies</div><table class="tbl"><thead><tr><th>Name</th><th>Slug</th><th>Members</th><th>Plan</th></tr></thead><tbody>
-        ${o.organizations.map(x=>`<tr><td>${esc(x.name)}</td><td class="muted">${esc(x.slug)}</td><td>${x.members}</td><td><span class="chip chip-neutral">${esc(x.plan)}</span></td></tr>`).join('') || '<tr><td colspan="4"><div class="empty">No companies yet.</div></td></tr>'}
+
+      <div class="card" style="border-color:${(pend.count||0)>0?'color-mix(in srgb, var(--warn) 45%, transparent)':'var(--border)'}">
+        <div class="kicker">Waiting for approval${(pend.count||0)>0?` <span class="chip" style="background:color-mix(in srgb, var(--warn) 20%, transparent);color:var(--warn)">${pend.count}</span>`:''}</div>
+        <table class="tbl"><tbody>
+          ${queue || '<tr><td><div class="empty">Nobody is waiting. New sign-ups appear here automatically.</div></td></tr>'}
+        </tbody></table>
+      </div>
+
+      <div class="card" style="margin-top:16px"><div class="kicker">All companies</div>
+        <table class="tbl"><thead><tr><th>Name</th><th>Status</th><th>Members</th><th>Plan</th><th></th></tr></thead><tbody>
+        ${rows || '<tr><td colspan="5"><div class="empty">No companies yet.</div></td></tr>'}
       </tbody></table></div>
+
       <div class="card" style="margin-top:16px"><div class="kicker">All users</div><table class="tbl"><tbody>
         ${u.users.map(x=>`<tr><td>${esc(x.name||'—')}</td><td class="muted">${esc(x.email)}</td><td>${x.superadmin?'<span class="chip" style="background:color-mix(in srgb, var(--accent) 20%, transparent);color:var(--accent)">super-admin</span>':''}</td></tr>`).join('')}
       </tbody></table></div>
@@ -1338,6 +1416,24 @@ async function renderAdmin(){
 // ============================================================================
 // modal helper + hero SVG + boot
 // ============================================================================
+// Small transient confirmation. This file had no notification helper; every
+// other flow used a modal, which is too heavy for "approved".
+function toast(msg){
+  let host = document.getElementById('toastHost');
+  if(!host){
+    host = document.createElement('div');
+    host.id = 'toastHost';
+    host.style.cssText = 'position:fixed;right:18px;bottom:18px;z-index:9999;display:flex;flex-direction:column;gap:8px';
+    document.body.appendChild(host);
+  }
+  const el = document.createElement('div');
+  el.textContent = msg;
+  el.style.cssText = 'background:var(--bg-elev);border:1px solid var(--border);border-radius:10px;'
+    + 'padding:11px 15px;font-size:13px;color:var(--text);box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:340px';
+  host.appendChild(el);
+  setTimeout(()=>{ el.style.transition='opacity .3s'; el.style.opacity='0'; setTimeout(()=>el.remove(), 320); }, 3600);
+}
+
 function showModal(html){ document.getElementById('modalRoot').innerHTML = `<div class="modalWrap" onclick="if(event.target===this)closeModal()">${html}</div>`; }
 function closeModal(){ document.getElementById('modalRoot').innerHTML = ''; }
 
