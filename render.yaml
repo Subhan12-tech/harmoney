@@ -20,7 +20,7 @@ services:
     runtime: docker
     dockerfilePath: ./Dockerfile
     region: oregon
-    plan: starter         # free tier is 512MB and sleeps; see README_RENDER.md
+    plan: free            # sleeps after ~15 min idle; see the free-tier notes in README_RENDER.md
     healthCheckPath: /healthz
     autoDeploy: true
 
@@ -74,7 +74,7 @@ services:
     runtime: node
     rootDir: harmony-web
     region: oregon
-    plan: starter
+    plan: free
     buildCommand: npm ci && npm run build
     startCommand: npm run start
     autoDeploy: true

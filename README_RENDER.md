@@ -71,3 +71,72 @@ CORS_ORIGINS=https://harmony-web.vercel.app
 
 and set `NEXT_PUBLIC_API_URL` on the frontend to the Render service URL. Both
 need to be exact — no trailing slash.
+
+---
+
+# Running this entirely free
+
+It works, with real trade-offs. Know them before you show it to anyone.
+
+## The free stack
+
+| Piece | Where | Free tier | Catch |
+|---|---|---|---|
+| API | Render Web Service | 512MB, sleeps after ~15 min | cold start ~50s |
+| UI | Render Web Service | same | cold start, but harmless for a frontend |
+| Postgres | **Neon**, not Render | 0.5GB, no expiry | none worth caring about |
+| Vectors | Qdrant Cloud | 1GB cluster | plenty for a corpus this size |
+| LLM | Mistral | pay per token | the only thing that actually costs money |
+
+## Use Neon for Postgres, not Render
+
+Render's free Postgres is **deleted after 90 days**. Not paused, not archived —
+gone, with every account and review in it. That is fine for a two-week demo and
+a disaster for anything else.
+
+Neon's free tier has no expiry:
+
+1. neon.tech → sign up → create a project
+2. Copy the connection string (starts `postgresql://`)
+3. Set it as `APP_DATABASE_URL` on the Render API service
+
+The `postgres://` normalisation in db.py handles either provider, so nothing in
+the code changes.
+
+## What "sleeps" actually means here
+
+A free Render service is stopped after ~15 minutes with no traffic. The next
+request wakes it, which takes roughly 50 seconds while the container starts and
+this app imports LangChain, Qdrant and the Mistral SDK.
+
+That lands worst on the API, because a review already takes 30-90 seconds. A
+first-visit-after-idle review can therefore take over two minutes with no
+feedback beyond the spinner. The UI says a review takes 30-90 seconds, and on a
+cold free instance that is optimistic.
+
+Keeping it warm with an external pinger works but is against the spirit of the
+free tier and Render may throttle it. Upgrading the API alone to Starter ($7)
+removes the problem entirely and is the single most worthwhile $7 here.
+
+## Memory is the real risk
+
+512MB is tight for this dependency set. LangChain, qdrant-client, the Mistral
+SDK and a tokenizer are all resident before a review starts. If deploys succeed
+but the service dies mid-review with no traceback, that is the OOM killer, and
+the only fix is a larger instance.
+
+Watch the Metrics tab after your first few reviews.
+
+## Honest summary
+
+Free is right for: showing the project, a portfolio piece, testing the pipeline,
+a demo you are present for.
+
+Free is wrong for: a customer trial, a live link someone might click unattended,
+anything where the first impression matters. A 50-second blank wait reads as
+broken.
+
+The upgrade path in priority order:
+1. Postgres off Render free (use Neon) — do this now, it costs nothing
+2. API to Starter, $7/mo — kills the cold start and the OOM risk
+3. UI to Starter, $7/mo — least important; a frontend cold start is survivable
