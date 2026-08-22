@@ -45,6 +45,16 @@ class Organization(SQLModel, table=True):
     size: str = ""
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+    # --- ACCESS GATE (platform owner controls this, not the customer) ---
+    # pending   : signed up, waiting for the platform owner to grant access
+    # active    : may use the product
+    # suspended : access withdrawn (non-payment, end of trial, breach)
+    # Data is never deleted on suspend — reactivating restores the workspace.
+    status: str = Field(default="pending", index=True)
+    status_reason: str = ""                       # shown to the customer on the blocked screen
+    activated_at: datetime | None = None
+    activated_by: str = ""                        # superadmin user id
+
 
 class User(SQLModel, table=True):
     id: str = Field(default_factory=_uuid, primary_key=True)
@@ -182,19 +192,37 @@ class HistoryItem(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
-def _migrate_sqlite():
-    # dev convenience: create_all() only adds missing TABLES, not missing COLUMNS on
-    # tables that already exist. Patch in newly-added columns on an existing sqlite file.
-    if not DB_URL.startswith("sqlite"):
-        return
+# create_all() adds missing TABLES but never missing COLUMNS on a table that
+# already exists. These patches bring an existing database up to the current
+# model. Runs on both SQLite (dev) and Postgres (prod) — the previous version
+# returned early on anything but SQLite, which would have left production
+# missing every column added after its first deploy.
+_COLUMN_PATCHES = {
+    "document": [("risk", "VARCHAR NOT NULL DEFAULT 'Low'")],
+    "review": [("issues_json", "VARCHAR NOT NULL DEFAULT '[]'"),
+               ("evidence_json", "VARCHAR NOT NULL DEFAULT '[]'")],
+    "organization": [("status", "VARCHAR NOT NULL DEFAULT 'active'"),
+                     ("status_reason", "VARCHAR NOT NULL DEFAULT ''"),
+                     ("activated_at", "TIMESTAMP NULL"),
+                     ("activated_by", "VARCHAR NOT NULL DEFAULT ''")],
+}
+
+
+def _existing_columns(conn, table: str) -> set:
+    from sqlalchemy import inspect
+    try:
+        return {c["name"] for c in inspect(conn).get_columns(table)}
+    except Exception:
+        return set()
+
+
+def _migrate():
     from sqlalchemy import text
-    patches = {
-        "document": [("risk", "VARCHAR NOT NULL DEFAULT 'Low'")],
-        "review": [("issues_json", "VARCHAR NOT NULL DEFAULT '[]'"), ("evidence_json", "VARCHAR NOT NULL DEFAULT '[]'")],
-    }
     with engine.connect() as conn:
-        for table, cols in patches.items():
-            existing = {row[1] for row in conn.execute(text(f"PRAGMA table_info({table})"))}
+        for table, cols in _COLUMN_PATCHES.items():
+            existing = _existing_columns(conn, table)
+            if not existing:
+                continue                      # table not created yet; create_all handles it
             for name, ddl in cols:
                 if name not in existing:
                     conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}"))
@@ -203,4 +231,4 @@ def _migrate_sqlite():
 
 def init_db():
     SQLModel.metadata.create_all(engine)
-    _migrate_sqlite()
+    _migrate()

@@ -10,7 +10,7 @@ from jose import jwt, JWTError
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer
 from sqlmodel import Session, select
-from db import engine, User, Membership, SessionRec, MfaSecret
+from db import engine, User, Membership, SessionRec, MfaSecret, Organization
 
 # JWT signing key. Ye har session token sign karti hai — agar attacker ko pata chal jaye
 # to wo KISI BHI user/org ka valid token bana sakta hai (poora auth bypass).
@@ -32,6 +32,28 @@ if SECRET_KEY == _DEV_SECRET:
 
 ALGORITHM = "HS256"
 TOKEN_EXPIRE_MIN = 60 * 24
+
+# ----------------------------------------------------------------------------
+# PLATFORM OWNER — the single account that grants and revokes customer access.
+# ----------------------------------------------------------------------------
+# Set PLATFORM_OWNER_EMAIL in the environment. When that address signs up (or
+# logs in) it is promoted to superadmin automatically, so there is no CLI step
+# on a host where you cannot run scripts. Everyone else is a customer.
+PLATFORM_OWNER_EMAIL = (os.getenv("PLATFORM_OWNER_EMAIL") or "").strip().lower()
+
+# How a brand-new signup is treated:
+#   approval (default) -> org is created "pending"; nobody can use it until you
+#                         approve it. This is the mode for selling access.
+#   open               -> org is active immediately (self-serve / demo).
+SIGNUP_MODE = (os.getenv("HARMONY_SIGNUP_MODE") or "approval").strip().lower()
+
+
+def is_platform_owner(email: str) -> bool:
+    return bool(PLATFORM_OWNER_EMAIL) and (email or "").strip().lower() == PLATFORM_OWNER_EMAIL
+
+
+def new_org_status() -> str:
+    return "active" if SIGNUP_MODE == "open" else "pending"
 
 pwd = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 oauth2 = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
@@ -86,10 +108,55 @@ def current_user(token: str = Depends(oauth2)) -> User:
     return user
 
 
-def current_org_id(token: str = Depends(oauth2)) -> str:
-    # token se active org nikaalta hai (multi-tenant scope)
+def org_id_unchecked(token: str = Depends(oauth2)) -> str:
+    """Raw org id from the token, with NO access check.
+
+    Only for endpoints a blocked customer must still reach — /api/auth/me and
+    logout — so they can see why they are blocked instead of a bare 403 loop.
+    """
     payload = _decode(token)
     return payload.get("org") or ""
+
+
+def org_status(org_id: str) -> tuple[str, str]:
+    if not org_id:
+        return "missing", ""
+    with Session(engine) as s:
+        org = s.get(Organization, org_id)
+    if not org:
+        return "missing", ""
+    return (org.status or "active"), (org.status_reason or "")
+
+
+def current_org_id(token: str = Depends(oauth2), user: User = Depends(current_user)) -> str:
+    """Org scope for every product route — and the licence gate.
+
+    Placing the check here rather than on each route means a new endpoint is
+    gated by default. Forgetting to add a guard is the usual way these leak.
+    """
+    payload = _decode(token)
+    oid = payload.get("org") or ""
+
+    # The platform owner is never locked out of anything — that is the whole
+    # point of the account that does the unlocking.
+    if user.is_superadmin:
+        return oid
+
+    status, reason = org_status(oid)
+    if status == "active":
+        return oid
+    if status == "pending":
+        raise HTTPException(
+            status_code=403,
+            detail="This workspace is awaiting activation by the Harmony team. "
+                   "You will be notified as soon as it is approved.",
+        )
+    if status == "suspended":
+        raise HTTPException(
+            status_code=403,
+            detail=reason or "Access to this workspace has been suspended. Contact your Harmony account manager.",
+        )
+    raise HTTPException(status_code=403, detail="No active workspace on this account.")
 
 
 def user_membership(user_id: str, org_id: str | None = None) -> Membership | None:

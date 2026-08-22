@@ -160,25 +160,65 @@ VECTOR_SIZE = 1024
 COLLECTION = "harmony_history"   # (multi-tenant: aage har client ke liye alag collection)
 
 # Qdrant client + collection (agar pehle se nahi hai to bana do)
-qdrant_client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
-_existing = [c.name for c in qdrant_client.get_collections().collections]
-if COLLECTION not in _existing:
-    qdrant_client.create_collection(
-        collection_name=COLLECTION,
-        vectors_config=VectorParams(size=VECTOR_SIZE, distance=Distance.COSINE),
-    )
+#
+# timeout: default is generous enough that a slow Qdrant hangs the whole boot.
+QDRANT_TIMEOUT = int(os.getenv("QDRANT_TIMEOUT", "20"))
+qdrant_client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY, timeout=QDRANT_TIMEOUT)
 
-# Qdrant Cloud REJECTS a filtered search on a field with no payload index (400 Bad Request).
-# retrieve_context()/structured_issues_agent() always filter by metadata.org_id for multi-tenant
-# isolation, so that index must exist. create_payload_index() is safe to call every startup —
-# it no-ops (or raises harmlessly) if the index is already there.
-try:
-    from qdrant_client.http.models import PayloadSchemaType
-    qdrant_client.create_payload_index(
-        collection_name=COLLECTION, field_name="metadata.org_id", field_schema=PayloadSchemaType.KEYWORD,
-    )
-except Exception as _e:
-    print("payload index on metadata.org_id: already present or could not be (re)created:", _e)
+# Tracks whether the one-time collection setup has succeeded yet. If Qdrant was
+# unreachable at boot we retry lazily on first use rather than staying broken.
+_collection_ready = False
+
+
+def ensure_collection(force: bool = False) -> bool:
+    """Create the collection and its org_id payload index if missing.
+
+    Safe to call repeatedly. Returns True when Qdrant is usable.
+
+    Qdrant Cloud REJECTS a filtered search on a field with no payload index
+    (400 Bad Request), and every retrieve filters by metadata.org_id for tenant
+    isolation — so that index is not optional.
+    """
+    global _collection_ready
+    if _collection_ready and not force:
+        return True
+    try:
+        names = [c.name for c in qdrant_client.get_collections().collections]
+        if COLLECTION not in names:
+            qdrant_client.create_collection(
+                collection_name=COLLECTION,
+                vectors_config=VectorParams(size=VECTOR_SIZE, distance=Distance.COSINE),
+            )
+        try:
+            from qdrant_client.http.models import PayloadSchemaType
+            qdrant_client.create_payload_index(
+                collection_name=COLLECTION, field_name="metadata.org_id",
+                field_schema=PayloadSchemaType.KEYWORD,
+            )
+        except Exception as _e:
+            # Already present is the common case and is not an error.
+            print("payload index on metadata.org_id: already present or not (re)created:", _e)
+        _collection_ready = True
+        return True
+    except Exception as e:
+        print(f"Qdrant not reachable during setup: {type(e).__name__}: {e}")
+        return False
+
+
+# Boot must NOT die on a transient Qdrant blip. A hard failure here used to
+# raise out of the import, which on a container host means the process exits,
+# the deploy is marked failed and the platform rolls back — for a network
+# hiccup. Retry a few times, then carry on degraded: auth, dashboards and
+# /healthz keep serving, and the first review retries the setup.
+for _attempt in range(3):
+    if ensure_collection():
+        break
+    if _attempt < 2:
+        import time as _time
+        _time.sleep(2 * (_attempt + 1))
+else:
+    print("WARNING: starting without a verified Qdrant collection. "
+          "Review endpoints will retry on first use.")
 
 vector_store = QdrantVectorStore(
     client=qdrant_client,
@@ -270,6 +310,7 @@ def extract_rating(text: str) -> float:
 
 
 def retrieve_context(query: str, k: int = 6) -> str:
+    ensure_collection()   # no-op once ready; self-heals a degraded boot
     # semantic search over Qdrant (agar org set hai to sirf usi org ka data)
     flt = None
     _org = get_org()
@@ -286,6 +327,7 @@ def retrieve_context(query: str, k: int = 6) -> str:
 
 
 def add_documents_to_store(chunks: list[Document]):
+    ensure_collection()   # no-op once ready; self-heals a degraded boot
     # KYA: chunks ko Qdrant mein daalo, ID = content ka UUID.
     # KYUN (dedup): same content -> same UUID -> Qdrant UPSERT karta hai, duplicate point nahi.
     if not chunks:
