@@ -12,8 +12,16 @@ const TOKEN_KEY = "harmony.token";
 const ORG_KEY = "harmony.org_id";
 const ROLE_KEY = "harmony.role";
 const USER_KEY = "harmony.user_id";
+const SUPERADMIN_KEY = "harmony.superadmin";
 
-export type Session = { token: string; org_id: string; role: string };
+export type Session = {
+  token: string;
+  org_id: string;
+  role: string;
+  /** Platform owner. Separate from org RBAC and above it. */
+  is_superadmin?: boolean;
+  org_status?: string;
+};
 
 export class ApiError extends Error {
   readonly status: number;
@@ -47,6 +55,7 @@ export function saveSession(session: Session): void {
     s.setItem(TOKEN_KEY, session.token);
     s.setItem(ORG_KEY, session.org_id ?? "");
     s.setItem(ROLE_KEY, session.role ?? "");
+    s.setItem(SUPERADMIN_KEY, session.is_superadmin ? "1" : "0");
   } catch {
     /* over quota or blocked — the token simply will not survive a reload */
   }
@@ -65,6 +74,22 @@ export function getOrgId(): string | null {
     return store()?.getItem(ORG_KEY) ?? null;
   } catch {
     return null;
+  }
+}
+
+export function isSuperadmin(): boolean {
+  try {
+    return store()?.getItem(SUPERADMIN_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function setSuperadmin(v: boolean): void {
+  try {
+    store()?.setItem(SUPERADMIN_KEY, v ? "1" : "0");
+  } catch {
+    /* non-fatal: the admin nav link just will not show until next login */
   }
 }
 
@@ -96,7 +121,7 @@ export function clearSession(): void {
   const s = store();
   if (!s) return;
   try {
-    [TOKEN_KEY, ORG_KEY, ROLE_KEY, USER_KEY].forEach((k) => s.removeItem(k));
+    [TOKEN_KEY, ORG_KEY, ROLE_KEY, USER_KEY, SUPERADMIN_KEY].forEach((k) => s.removeItem(k));
   } catch {
     /* nothing to clear */
   }
@@ -316,4 +341,57 @@ export function changeMemberRole(userId: string, role: string): Promise<unknown>
 
 export function suspendMember(userId: string): Promise<unknown> {
   return apiPost(`/api/orgs/members/${encodeURIComponent(userId)}/suspend`, {}, true);
+}
+
+/* ============================================================
+   Platform admin — the licence queue. Superadmin only.
+   ============================================================ */
+
+export interface PendingOrg {
+  org_id: string;
+  name: string;
+  requested_by: string;
+  requested_by_name: string;
+  created_at: string;
+}
+
+export interface AdminOrg {
+  org_id: string;
+  name: string;
+  slug: string;
+  members: number;
+  plan: string;
+  status: string;
+  status_reason: string;
+  activated_at: string | null;
+  created_at: string;
+}
+
+export function adminPending(): Promise<{ pending: PendingOrg[]; count: number }> {
+  return apiGet("/api/admin/pending");
+}
+
+export function adminOrgs(): Promise<{ organizations: AdminOrg[] }> {
+  return apiGet("/api/admin/orgs");
+}
+
+export function adminStats(): Promise<{
+  organizations: number;
+  users: number;
+  documents: number;
+  reviews: number;
+}> {
+  return apiGet("/api/admin/stats");
+}
+
+export function adminApprove(orgId: string): Promise<AdminOrg> {
+  return apiPost(`/api/admin/orgs/${encodeURIComponent(orgId)}/approve`, {}, true);
+}
+
+export function adminSuspend(orgId: string, reason = ""): Promise<AdminOrg> {
+  return apiPost(`/api/admin/orgs/${encodeURIComponent(orgId)}/suspend`, { reason }, true);
+}
+
+export function adminReactivate(orgId: string): Promise<AdminOrg> {
+  return apiPost(`/api/admin/orgs/${encodeURIComponent(orgId)}/reactivate`, {}, true);
 }

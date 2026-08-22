@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BrandPanel } from "@/components/auth/BrandPanel";
-import { ApiError, apiGet, apiPost, saveSession, setUserId, type Session } from "@/lib/api";
+import { ApiError, apiGet, apiPost, saveSession, setSuperadmin, setUserId, type Session } from "@/lib/api";
 import { WarningIcon } from "@/components/app/icons";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -66,8 +66,9 @@ export default function LoginPage() {
       // Cache the user id so the team list can mark "you"; a failure here is
       // cosmetic, so it must never block the sign-in.
       try {
-        const me = await apiGet<{ id: string }>("/api/auth/me");
+        const me = await apiGet<{ id: string; is_superadmin?: boolean }>("/api/auth/me");
         if (me?.id) setUserId(me.id);
+        setSuperadmin(Boolean(me?.is_superadmin));
       } catch {
         /* ignore */
       }

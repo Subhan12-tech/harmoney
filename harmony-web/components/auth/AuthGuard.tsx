@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiGet, clearSession, getToken, setUserId } from "@/lib/api";
+import { apiGet, clearSession, getToken, setSuperadmin, setUserId } from "@/lib/api";
 
 /**
  * Gate for the authenticated shell.
@@ -22,6 +22,7 @@ interface Me {
   id: string;
   full_name: string;
   email: string;
+  is_superadmin?: boolean;
   org_status?: string;
   org_status_reason?: string;
 }
@@ -49,9 +50,13 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         const me = await apiGet<Me>("/api/auth/me");
         if (cancelled) return;
         if (me?.id) setUserId(me.id);
+        setSuperadmin(Boolean(me?.is_superadmin));
 
         const status = (me.org_status || "active").toLowerCase();
-        if (status === "active") {
+        // The platform owner is never walled out — they are the one who lifts
+        // the wall, and their own workspace may still be pending. The backend
+        // grants superadmin the same bypass, so this only matches it.
+        if (status === "active" || me.is_superadmin) {
           setState({ kind: "allowed" });
         } else {
           setState({

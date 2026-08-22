@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { adminPending, isSuperadmin } from "@/lib/api";
 import { Logo } from "@/components/Logo";
 import { useRole } from "@/context/RoleContext";
 import { ORGS } from "@/lib/data";
@@ -48,6 +50,31 @@ export function isNavItemActive(pathname: string, item: NavItem): boolean {
 export function Sidebar() {
   const pathname = usePathname();
   const { orgId, setOrgId } = useRole();
+
+  // Platform-owner only. The count is the reason this is worth showing in the
+  // nav rather than hiding behind a URL — a pending customer is revenue waiting.
+  const [pendingCount, setPendingCount] = useState<number | null>(null);
+  const showAdmin = isSuperadmin();
+
+  useEffect(() => {
+    if (!showAdmin) return;
+    let cancelled = false;
+    const poll = () =>
+      adminPending()
+        .then((r) => {
+          if (!cancelled) setPendingCount(r.count ?? 0);
+        })
+        .catch(() => {
+          /* a failure here must never break the nav */
+        });
+    void poll();
+    // Cheap endpoint; refreshing means a signup shows up without a page reload.
+    const id = setInterval(poll, 60_000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [showAdmin]);
 
   return (
     <aside
@@ -104,6 +131,48 @@ export function Sidebar() {
             })}
           </div>
         ))}
+        {showAdmin && (
+          <div key="Platform">
+            <div
+              style={{
+                fontSize: 10,
+                letterSpacing: ".1em",
+                textTransform: "uppercase",
+                color: "var(--muted)",
+                padding: "16px 8px 6px",
+              }}
+            >
+              Platform
+            </div>
+            <Link
+              href="/app/admin"
+              className="flex items-center justify-between gap-2.5"
+              style={{
+                borderRadius: 9,
+                padding: "9px 10px",
+                fontSize: 13.5,
+                color: pathname.startsWith("/app/admin") ? "var(--text)" : "var(--muted)",
+                background: pathname.startsWith("/app/admin") ? "var(--surface-2, rgba(255,255,255,.07))" : "transparent",
+              }}
+            >
+              <span>Approvals</span>
+              {pendingCount ? (
+                <span
+                  style={{
+                    background: "color-mix(in srgb, var(--warn) 22%, transparent)",
+                    color: "var(--warn)",
+                    borderRadius: 999,
+                    padding: "1px 8px",
+                    fontSize: 11,
+                    fontWeight: 700,
+                  }}
+                >
+                  {pendingCount}
+                </span>
+              ) : null}
+            </Link>
+          </div>
+        )}
       </nav>
 
       <div style={{ marginTop: "auto", paddingTop: 16, borderTop: "1px solid var(--border)" }}>
