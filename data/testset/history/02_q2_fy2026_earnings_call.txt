@@ -1,0 +1,25 @@
+MERIDIAN SYSTEMS INC. - Q2 FY2026 EARNINGS CALL TRANSCRIPT (fictional sample)
+Date: 16 July 2026 | Speakers: Dana Okafor (CEO), Priyanka Raman (CFO)
+
+DANA OKAFOR: Second-quarter revenue was $124.7 million, up 7% year over year.
+We closed the quarter with 1,240 enterprise customers, of which 78 now generate
+more than $1 million in annual recurring revenue.
+
+Atlas Sync reached general availability in May and is already deployed at 60
+customers.
+
+PRIYANKA RAMAN: Gross margin was 71.2%, down 30 basis points sequentially,
+reflecting the infrastructure investment behind Atlas Sync.
+
+Net revenue retention moderated to 112%. We want to be direct that this is a
+deceleration from the 114% we reported in the first quarter, driven by smaller
+expansion deals in our mid-market cohort rather than by increased churn. Gross
+logo churn was stable at 6.2% on an annualised basis.
+
+Headcount was 2,890 at quarter end, down from 2,940, reflecting the reduction we
+announced in March rather than attrition.
+
+We are reaffirming full-year guidance of high single-digit growth, $478 million
+to $486 million.
+
+Free cash flow was negative $4.1 million in the quarter.

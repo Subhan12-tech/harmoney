@@ -1,0 +1,7 @@
+DRAFT PRODUCT BLOG POST
+
+We are pleased to share that Meridian Vault will reach general availability in
+the fourth quarter of FY2026, ahead of our original schedule.
+
+Vault offers flexible key management, including a managed-key option for
+customers who prefer Meridian to handle key custody on their behalf.

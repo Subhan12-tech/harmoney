@@ -1,0 +1,25 @@
+MERIDIAN SYSTEMS INC. - INVESTOR FAQ (fictional sample)
+Published: 3 August 2026
+
+Q: How does Meridian charge for its products?
+A: Meridian has operated a consumption-based pricing model since FY2025, when we
+moved away from per-seat licensing. Customers are billed on data volume
+processed.
+
+Q: What is your customer concentration risk?
+A: As of the second quarter of FY2026, our largest single customer represented
+5.0% of revenue. No other customer exceeds 3%.
+
+Q: Is Meridian profitable?
+A: Not yet on an operating basis. We were operating-margin negative in the first
+half of FY2026 and expect our first positive operating quarter before the end of
+the fiscal year.
+
+Q: Where is customer data stored?
+A: In the region the customer selects: Virginia or Oregon in the United States,
+or Frankfurt in the European Union. We do not currently operate an Asia-Pacific
+region.
+
+Q: How many people does Meridian employ?
+A: Approximately 2,890 as of the end of the second quarter, of whom roughly 400
+are based in the European Union.

@@ -1,0 +1,17 @@
+MERIDIAN SYSTEMS INC. - PRESS RELEASE (fictional sample)
+FOR IMMEDIATE RELEASE - 6 May 2026
+
+MERIDIAN SYSTEMS ANNOUNCES GENERAL AVAILABILITY OF ATLAS SYNC
+
+Meridian Systems Inc. today announced the general availability of Atlas Sync, its
+cross-region data replication service.
+
+Atlas Sync is available in the existing Meridian regions: Virginia and Oregon in
+the United States, and Frankfurt in the European Union. An Asia-Pacific region
+remains under evaluation and has not been scheduled.
+
+"Atlas Sync is the product our largest customers have asked for," said Dana
+Okafor, Chief Executive Officer.
+
+Meridian achieved SOC 2 Type II certification in March 2026. The ISO 27001
+certification effort is in progress and has not yet been completed.

@@ -1,0 +1,18 @@
+MERIDIAN SYSTEMS INC. - ANNUAL REPORT, RISK FACTORS EXCERPT (fictional sample)
+Filed: 20 February 2026 | Fiscal year ended 31 December 2025
+
+Full-year FY2025 revenue was $412.0 million.
+
+We depend on a limited number of large customers. In FY2025 our largest customer
+represented 5.4% of total revenue, and our ten largest customers together
+represented 24% of total revenue.
+
+We have a history of operating losses. We recorded an operating loss in each of
+the last three fiscal years and may not achieve or sustain operating
+profitability.
+
+Our net revenue retention rate has declined in recent periods, from 121% in
+FY2024 to 116% in FY2025, and may continue to decline.
+
+We are not currently certified under ISO 27001. We hold SOC 2 Type I
+certification and expect to complete SOC 2 Type II during FY2026.

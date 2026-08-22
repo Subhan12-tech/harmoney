@@ -1,0 +1,14 @@
+MERIDIAN SYSTEMS INC. - ANALYST DAY TRANSCRIPT, EXCERPT (fictional sample)
+Date: 11 September 2026 | Speaker: Tom Bergstrom (CTO)
+
+TOM BERGSTROM: On the roadmap question - Meridian Vault will reach general
+availability in the first quarter of FY2027. That date has been unchanged since
+we reset it in FY2025, and I want to be clear we are not moving it again.
+
+On architecture: Vault performs encryption client-side. Meridian never holds
+plaintext customer keys. This is a design constraint, not a configuration option,
+and it is the reason the redesign took the additional six months.
+
+ANALYST: Any change to the Asia-Pacific plan?
+
+TOM BERGSTROM: Nothing to announce. It remains under evaluation.

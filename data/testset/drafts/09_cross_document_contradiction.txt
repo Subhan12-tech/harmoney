@@ -1,0 +1,9 @@
+DRAFT CUSTOMER-FACING FAQ
+
+Q: Where can we host our data?
+A: Meridian operates regions in the United States, the European Union, and
+Asia-Pacific, with our Singapore region available to enterprise customers today.
+
+Q: How is Meridian priced?
+A: Meridian is licensed on a per-seat basis, with volume discounts available at
+enterprise tiers.

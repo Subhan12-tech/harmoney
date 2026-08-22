@@ -1,0 +1,19 @@
+MERIDIAN SYSTEMS INC. - INTERNAL MEMORANDUM (fictional sample)
+Date: 28 September 2026 | To: Product Leadership | From: Tom Bergstrom, CTO
+CONFIDENTIAL - INTERNAL USE ONLY
+
+Team,
+
+Vault GA holds at Q1 FY2027. I am aware engineering has floated pulling it into
+Q4 FY2026 to help the annual number. We are not doing that, and more importantly
+we are not signalling it externally until it is real. Our public position since
+FY2025 has been Q1 FY2027 and it stays there until the release actually ships.
+
+Second: the APAC region. Sales is quoting a Singapore region to prospects. There
+is no approved plan, no budget line, and no date. It is under evaluation. Please
+correct anyone using it in a customer conversation.
+
+Third: on Vault key handling - the client-side encryption model is fixed. If
+anyone is describing a managed-key option to customers, stop.
+
+Tom

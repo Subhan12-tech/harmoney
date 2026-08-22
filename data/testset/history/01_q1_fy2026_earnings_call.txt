@@ -1,0 +1,25 @@
+MERIDIAN SYSTEMS INC. - Q1 FY2026 EARNINGS CALL TRANSCRIPT (fictional sample)
+Date: 14 April 2026 | Speakers: Dana Okafor (CEO), Priyanka Raman (CFO)
+
+DANA OKAFOR: Thank you all for joining. Meridian delivered first-quarter revenue
+of $118.4 million, an increase of 9% year over year. We ended the quarter with
+1,180 enterprise customers.
+
+We are reaffirming our full-year FY2026 outlook of high single-digit revenue
+growth, which translates to a range of $478 million to $486 million.
+
+PRIYANKA RAMAN: Gross margin for the quarter was 71.5%. We remain slightly
+operating-margin negative at minus 1.2%, though the trajectory is improving and
+we continue to expect our first positive operating quarter before year end.
+
+Net revenue retention was 114% for the trailing twelve months. Headcount at
+quarter end was 2,940.
+
+Our largest single customer represented 5.1% of revenue in the quarter. We hold
+$271 million in cash and carry no debt.
+
+DANA OKAFOR: On product - Atlas Sync remains on track for general availability
+in the second quarter. Meridian Vault is scheduled for general availability in
+the first quarter of FY2027; as we disclosed last year, this reflects a
+deliberate six-month shift from our original H2 FY2026 target to accommodate the
+encryption redesign customers asked for.
