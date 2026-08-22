@@ -31,7 +31,7 @@ export const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     items: [
       { href: "/app", label: "Dashboard", icon: DashboardIcon, exact: true },
       { href: "/app/documents", label: "All Documents", icon: DocumentsIcon },
-      { href: "/app/review/q3-fy2026-earnings", label: "Review Workspace", icon: ReviewIcon },
+      { href: "/app/review", label: "Review Workspace", icon: ReviewIcon },
     ],
   },
   { title: "Knowledge", items: [{ href: "/app/knowledge", label: "Evidence Library", icon: KnowledgeIcon }] },

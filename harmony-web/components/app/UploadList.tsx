@@ -152,7 +152,7 @@ function UploadRow({
           </button>
         )}
         {done && (
-          <Link href="/app/review/q3-fy2026-earnings" style={{ fontSize: 12, color: "var(--accent)" }}>
+          <Link href="/app/documents" style={{ fontSize: 12, color: "var(--accent)" }}>
             Open
           </Link>
         )}

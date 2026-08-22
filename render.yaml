@@ -53,40 +53,11 @@ services:
       - key: QDRANT_API_KEY
         sync: false
 
-      # Comma-separated origins allowed to call this API.
-      # e.g. https://harmony-web.vercel.app
+      # Only needed if you ever serve the UI from a DIFFERENT host. The bundled
+      # UI is same-origin, so this can stay unset.
       - key: CORS_ORIGINS
         sync: false
 
-      # Where the product UI (harmony-web) is deployed. Once set, this API's
-      # root redirects there instead of serving the built-in fallback dashboard,
-      # so there is only ever one live interface.
-      - key: FRONTEND_URL
-        sync: false
-
-  # ---------------------------------------------------------------------------
-  # Product UI (Next.js). Separate service because it is a Node server, not the
-  # Python image - /app/review/[id] is server-rendered on demand, so this cannot
-  # be a static site.
-  # ---------------------------------------------------------------------------
-  - type: web
-    name: harmony-web
-    runtime: node
-    rootDir: harmony-web
-    region: oregon
-    plan: free
-    buildCommand: npm ci && npm run build
-    startCommand: npm run start
-    autoDeploy: true
-
-    envVars:
-      # Baked in at BUILD time, not read at runtime - changing it needs a
-      # rebuild, not a restart.
-      #
-      # Entered by hand rather than wired with fromService: that yields a bare
-      # hostname, and this needs a full origin including https://. Set it to the
-      # harmony-api service URL, e.g. https://harmoney.onrender.com
-      - key: NEXT_PUBLIC_API_URL
-        sync: false
-      - key: NODE_VERSION
-        value: "20"
+      # NOTE: no FRONTEND_URL and no separate UI service. harmony-web is built
+      # into this image (see Dockerfile stage 1) and served from the same origin,
+      # so there is nothing to point at and no CORS to configure.

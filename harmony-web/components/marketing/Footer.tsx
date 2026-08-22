@@ -5,7 +5,7 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
   {
     title: "Product",
     links: [
-      { label: "Review", href: "/app/review/q3-fy2026-earnings" },
+      { label: "Review", href: "/app/documents" },
       { label: "Evidence", href: "/app/knowledge" },
       { label: "Analytics", href: "/app/analytics" },
       { label: "Integrations", href: "/app/settings/integrations" },

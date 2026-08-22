@@ -6,7 +6,10 @@
  * else with NEXT_PUBLIC_API_URL when the API is not on localhost.
  */
 
-export const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000").replace(/\/$/, "");
+// Empty means same-origin, which is the production case: the static export is
+// served by the API itself, so "/api/..." resolves without a host. Only local
+// development needs an absolute URL, and .env.development supplies it.
+export const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
 
 const TOKEN_KEY = "harmony.token";
 const ORG_KEY = "harmony.org_id";
@@ -159,7 +162,7 @@ async function request<T>(path: string, init: RequestInit, auth: boolean): Promi
     res = await fetch(`${API_BASE}${path}`, { ...init, headers });
   } catch {
     // A network-level failure here almost always means the API is not running.
-    throw new ApiError(0, `Cannot reach the Harmony API at ${API_BASE}. Is the backend running?`);
+    throw new ApiError(0, `Cannot reach the Harmony API${API_BASE ? ` at ${API_BASE}` : ""}. Is the backend running?`);
   }
 
   const text = await res.text();
@@ -202,7 +205,7 @@ export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
       headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
     });
   } catch {
-    throw new ApiError(0, `Cannot reach the Harmony API at ${API_BASE}. Is the backend running?`);
+    throw new ApiError(0, `Cannot reach the Harmony API${API_BASE ? ` at ${API_BASE}` : ""}. Is the backend running?`);
   }
 
   const text = await res.text();

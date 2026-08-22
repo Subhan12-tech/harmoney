@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useRole } from "@/context/RoleContext";
 import { useAsyncResource } from "@/lib/useAsyncData";
 import { CURRENT_USER, WORKFLOW_STAGES, type Issue } from "@/lib/data";
@@ -23,7 +23,17 @@ import { Skeleton } from "@/components/app/Skeleton";
 import { useToast } from "@/components/app/Toast";
 import { BackIcon, SpinnerIcon } from "@/components/app/icons";
 
-export default function ReviewPage({ params }: { params: { id: string } }) {
+/**
+ * The review workspace.
+ *
+ * Reads the document id from `?id=` rather than a path segment. A path segment
+ * would make this route dynamic, which forces a Node server; as a query it
+ * exports statically and the API can serve the whole app itself - one service,
+ * one origin, no CORS.
+ */
+function ReviewPageInner() {
+  const search = useSearchParams();
+  const params = { id: search.get("id") ?? "" };
   const { orgId, canApprove, isViewer, isEditorOnly, role } = useRole();
   const { toast } = useToast();
   const router = useRouter();
@@ -449,3 +459,12 @@ const modalTextStyle: React.CSSProperties = {
   color: "rgba(238,241,244,.85)",
   margin: "0 0 8px",
 };
+
+/** `useSearchParams` requires a Suspense boundary to prerender. */
+export default function ReviewPage() {
+  return (
+    <Suspense fallback={<div className="app-card" style={{ padding: 24 }}><Skeleton /></div>}>
+      <ReviewPageInner />
+    </Suspense>
+  );
+}

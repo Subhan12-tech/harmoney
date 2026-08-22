@@ -337,24 +337,44 @@ def healthz():
 
 import os as _os
 
-# The product UI is harmony-web (Next.js), deployed separately. Once FRONTEND_URL
-# is set, the API root redirects there so this host never serves a second, older
-# interface — having two live UIs is how they drift apart.
-# Unset, it falls back to the built-in single-file dashboard, which keeps a
-# bare API deployment usable on its own.
-FRONTEND_URL = (_os.getenv("FRONTEND_URL") or "").strip().rstrip("/")
+# ----------------------------------------------------------------------------
+# THE UI
+# ----------------------------------------------------------------------------
+# harmony-web is built as a static export (next.config.mjs: output "export") and
+# served from this same service. One deployment instead of two, and because the
+# UI and the API share an origin there is no CORS to configure or get wrong -
+# which was the single most likely thing to break in a split deployment.
+#
+# If the export is missing (a bare API deploy, or a build that skipped the Node
+# stage), the built-in single-file dashboard still answers, so the service is
+# never left with no interface at all.
+_HERE = _os.path.dirname(__file__)
+_WEB_DIR = _os.path.join(_HERE, "harmony-web", "out")
+_HAS_WEB = _os.path.isdir(_WEB_DIR) and _os.path.isfile(_os.path.join(_WEB_DIR, "index.html"))
 
 
-@app.get("/", response_class=HTMLResponse)
-def home():
-    if FRONTEND_URL:
-        from fastapi.responses import RedirectResponse
-        return RedirectResponse(FRONTEND_URL, status_code=307)
-    return _home_fallback()
+def _home_fallback() -> str:
+    with open(_os.path.join(_HERE, "frontend.html"), encoding="utf-8") as f:
+        return f.read()
 
 
-def _home_fallback():
-    _path = _os.path.join(_os.path.dirname(__file__), "frontend.html")
-    with open(_path, encoding="utf-8") as _f:
-        return _f.read()
-    
+if not _HAS_WEB:
+    print("harmony-web/out not found - serving the built-in dashboard instead. "
+          "Run `npm run build` in harmony-web/ to serve the product UI.")
+
+    @app.get("/", response_class=HTMLResponse)
+    def home():
+        return _home_fallback()
+
+
+# ----------------------------------------------------------------------------
+# Static UI mount - MUST be last.
+# ----------------------------------------------------------------------------
+# A mount at "/" shadows every route declared after it, so this sits at the end
+# of the file, below every API route. html=True makes StaticFiles resolve a
+# directory to its index.html, which is how the export's deep links
+# (/app/documents/ -> app/documents/index.html) work without any rewrite rules.
+if _HAS_WEB:
+    from fastapi.staticfiles import StaticFiles
+
+    app.mount("/", StaticFiles(directory=_WEB_DIR, html=True), name="harmony-web")

@@ -184,7 +184,7 @@ export function KnowledgeGraph({ nodes }: { nodes: GraphNodeDef[] }) {
         </ul>
 
         {selected.isCentre ? (
-          <Link href="/app/review/q3-fy2026-earnings" className="app-link" style={{ fontSize: 12.5 }}>
+          <Link href="/app/documents" className="app-link" style={{ fontSize: 12.5 }}>
             Open review workspace <span aria-hidden="true">→</span>
           </Link>
         ) : (

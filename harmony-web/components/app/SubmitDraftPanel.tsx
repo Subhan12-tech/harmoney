@@ -78,7 +78,7 @@ export function SubmitDraftPanel() {
             ? `${result.issues.length} issue${result.issues.length === 1 ? "" : "s"} found. Opening the review.`
             : "No inconsistencies found against your history.",
         );
-        router.push(`/app/review/${result.document_id}`);
+        router.push(`/app/review?id=${encodeURIComponent(result.document_id)}`);
       } else {
         setError("The review completed but returned no document to open.");
       }

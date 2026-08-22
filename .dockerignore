@@ -9,8 +9,9 @@ venv/
 __pycache__/
 *.pyc
 .git/
-harmony-web/
-landing/
+harmony-web/node_modules/
+harmony-web/.next/
+harmony-web/out/
 node_modules/
 err*.txt
 ERROR.txt

@@ -55,7 +55,7 @@ export function DocTable({ documents, compact = false }: { documents: HarmonyDoc
             {!compact && <td style={{ color: "var(--muted)" }}>{d.updated}</td>}
             <td>
               <Link
-                href={`/app/review/${d.id}`}
+                href={`/app/review?id=${encodeURIComponent(d.id)}`}
                 style={{ fontSize: 12, color: "var(--accent)", whiteSpace: "nowrap" }}
               >
                 Open <span aria-hidden="true">→</span>

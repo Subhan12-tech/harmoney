@@ -1,85 +1,76 @@
-# Deploying harmony-web
+# harmony-web
 
-This is the product UI. It runs as its own Render Web Service, alongside the
-API. It cannot be a Static Site: `/app/review/[id]` is server-rendered on
-demand, so it needs a Node server.
+The product UI. It is **not deployed separately** — it is built into the API
+image and served from the same origin.
 
-## 1. Create the service
+## How it ships
 
-Render → **New +** → **Web Service** → connect `Subhan12-tech/harmoney`.
+`next.config.mjs` sets `output: "export"`, so `npm run build` produces plain
+files in `out/`. The Dockerfile at the repo root builds that in a Node stage,
+copies `out/` into the Python image, and `app.py` mounts it at `/`.
 
-| Field | Value |
-|---|---|
-| Name | `harmony-web` |
-| Region | **Oregon** — same as the API |
-| Branch | `main` |
-| **Root Directory** | **`harmony-web`** ← the setting people miss |
-| Language | **Node** |
-| Build Command | `npm ci && npm run build` |
-| Start Command | `npm run start` |
-| Instance Type | Starter |
+```
+Dockerfile stage 1 (node:20)   npm ci && npm run build  ->  /web/out
+Dockerfile stage 2 (python)    COPY --from=web /web/out ->  harmony-web/out
+app.py                         mount("/", StaticFiles(harmony-web/out))
+```
 
-Environment variables:
+One service. One origin. **No CORS**, which removes the most common way a split
+deployment breaks.
 
-| Key | Value |
-|---|---|
-| `NEXT_PUBLIC_API_URL` | `https://harmoney.onrender.com` |
-| `NODE_VERSION` | `20` |
-
-`NEXT_PUBLIC_API_URL` is baked in at **build** time, not read at runtime.
-Changing it later needs a rebuild, not a restart. No trailing slash.
-
-`next start` binds whatever `PORT` Render injects — no flag needed, and passing
-one breaks the script on Windows.
-
-Deploy. First build ~3-5 minutes.
-
-## 2. Point the API back at it
-
-Two variables on the **Render** service, both needed:
-
-| Key | Value | Why |
-|---|---|---|
-| `CORS_ORIGINS` | `https://harmony-web.onrender.com` | Without it the browser blocks every API call and the app looks dead while the network tab fills with CORS errors |
-| `FRONTEND_URL` | `https://harmony-web.onrender.com` | Makes the API root redirect here instead of serving the old built-in dashboard, so there is only ever one live UI |
-
-Exact origins — scheme included, no trailing slash.
-
-## 3. Check it
-
-1. Open the harmony-web URL → sign-in screen
-2. Sign in with your platform-owner account
-3. Sidebar shows **Platform → Approvals** (owner only)
-4. **All Documents → Check a document** → paste a draft → run it
-
-If the app loads but every panel is empty, it is almost always `CORS_ORIGINS`
-not matching the harmony-web origin exactly.
+Deploying is just deploying the API: push, then Render rebuilds. There is no
+separate frontend service, no `NEXT_PUBLIC_API_URL` to set in production, and no
+`CORS_ORIGINS` to keep in sync.
 
 ## Local development
 
-```bash
-npm install
-npm run dev          # http://localhost:3000
-```
-
-Expects the API on `http://127.0.0.1:8000`. Start it from the repo root:
+Two servers, because `next dev` gives you hot reload and the export does not.
 
 ```bash
+# terminal 1 - API on :8000
 uvicorn app:app --reload
+
+# terminal 2 - UI on :3000 with hot reload
+cd harmony-web && npm run dev
 ```
 
-For local work set `HARMONY_SIGNUP_MODE=open` on the API, otherwise every
-account you create is stuck pending until you approve it.
+`.env.development` (committed) points the dev server at `http://127.0.0.1:8000`.
+Production leaves `NEXT_PUBLIC_API_URL` unset, and an empty base means
+same-origin requests.
+
+Set `HARMONY_SIGNUP_MODE=open` on the API locally, or every account you create
+is stuck pending until you approve it.
+
+## Checking the production build locally
+
+To see exactly what Render will serve:
+
+```bash
+cd harmony-web && npm run build      # writes out/
+cd .. && uvicorn app:app             # serves it at http://127.0.0.1:8000
+```
+
+If `harmony-web/out` is missing, `app.py` says so on startup and falls back to
+the built-in single-file dashboard, so the service always has an interface.
+
+## Routing note
+
+`/app/review` takes the document id as `?id=`, not as a path segment. A dynamic
+path segment forces a Node server; a query string exports statically. The page
+was already a client component, so nothing else changed.
+
+`trailingSlash: true` makes every route its own directory with an `index.html`,
+which is what lets deep links resolve with no rewrite rules.
 
 ## What talks to what
 
 ```
-harmony-web (Render)  ──fetch + Bearer token──▶  harmony-api (Render)
-                                                   ├── Postgres   accounts, documents, reviews, audit
-                                                   ├── Qdrant     the evidence corpus
-                                                   └── Mistral    the review pipeline
+browser ──▶ harmony-api (Render)
+              ├── harmony-web/out   the UI, same origin
+              ├── Postgres          accounts, documents, reviews, audit
+              ├── Qdrant            the evidence corpus
+              └── Mistral           the review pipeline
 ```
 
-The frontend holds no secrets. `NEXT_PUBLIC_API_URL` is a public URL, and the
-session token lives in the browser's localStorage — every real permission check
-happens server-side.
+The UI holds no secrets. The session token lives in the browser's localStorage
+and every real permission check happens server-side.

@@ -2,6 +2,9 @@
 .env
 .env.*
 !.env.example
+# Committed on purpose: points the dev server at the local API. No secret in it,
+# and next build ignores .env.development, so it cannot leak into production.
+!harmony-web/.env.development
 
 # --- local data (contains real users + password hashes) ---
 *.db
@@ -19,6 +22,7 @@ __pycache__/
 node_modules/
 .next/
 out/
+harmony-web/out/
 *.tsbuildinfo
 
 # --- scratch ---
