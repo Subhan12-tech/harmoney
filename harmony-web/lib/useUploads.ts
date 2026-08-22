@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ApiError, uploadForText, uploadToCorpus } from "./api";
 
 export type UploadKind = "corpus" | "draft";
 export type UploadStatus = "Queued" | "Uploading" | "Encrypting" | "Indexing" | "Complete";
-export type UploadState = "uploading" | "done" | "cancelled";
+export type UploadState = "uploading" | "done" | "cancelled" | "failed";
 
 export interface Upload {
   id: string;
@@ -15,6 +16,10 @@ export interface Upload {
   pct: number;
   status: UploadStatus;
   state: UploadState;
+  /** Why it failed, when state is "failed". */
+  error?: string;
+  /** For draft uploads: the extracted text, ready to submit for review. */
+  text?: string;
 }
 
 /**
@@ -70,15 +75,11 @@ export function useUploads(onComplete?: (upload: Upload) => void) {
         const next = prev.map((u) => {
           if (u.state !== "uploading") return u;
 
-          const pct = Math.min(100, u.pct + stepFor(u.pct));
-          const advanced: Upload = {
-            ...u,
-            pct,
-            status: statusFor(pct),
-            state: pct >= 100 ? "done" : "uploading",
-          };
-          if (advanced.state === "done") finished.push(advanced);
-          return advanced;
+          // The bar advances toward 90 while the request is genuinely in
+          // flight; the server completing it is what takes it to 100. It never
+          // claims "done" before the upload actually succeeded.
+          const pct = Math.min(90, u.pct + stepFor(u.pct));
+          return { ...u, pct, status: statusFor(pct) };
         });
 
         // Notify outside the state updater so the toast is not queued mid-render.
@@ -108,18 +109,53 @@ export function useUploads(onComplete?: (upload: Upload) => void) {
     const list = Array.from(files as ArrayLike<File>);
     if (list.length === 0) return;
 
-    setUploads((prev) => [
-      ...prev,
-      ...list.map((f, i) => ({
-        id: `${Date.now()}-${i}-${Math.random().toString(36).slice(2, 8)}`,
-        name: f.name,
-        size: f.size,
-        kind,
-        pct: 0,
-        status: "Queued" as UploadStatus,
-        state: "uploading" as UploadState,
-      })),
-    ]);
+    const rows = list.map((f, i) => ({
+      id: `${Date.now()}-${i}-${Math.random().toString(36).slice(2, 8)}`,
+      name: f.name,
+      size: f.size,
+      kind,
+      pct: 0,
+      status: "Queued" as UploadStatus,
+      state: "uploading" as UploadState,
+    }));
+    setUploads((prev) => [...prev, ...rows]);
+
+    // Each file is sent independently so one failure cannot take the batch
+    // down with it, and the row that failed is the row that shows the error.
+    rows.forEach((row, i) => {
+      const file = list[i];
+      const finish = (patch: Partial<Upload>) =>
+        setUploads((prev) => {
+          let done: Upload | null = null;
+          const next = prev.map((u) => {
+            if (u.id !== row.id) return u;
+            // A user cancellation mid-flight wins over a late server response.
+            if (u.state === "cancelled") return u;
+            const merged = { ...u, ...patch } as Upload;
+            if (merged.state === "done") done = merged;
+            return merged;
+          });
+          if (done) queueMicrotask(() => completeRef.current?.(done as Upload));
+          return next;
+        });
+
+      const request =
+        kind === "corpus"
+          ? uploadToCorpus([file]).then(() => ({}) as { text?: string })
+          : uploadForText([file]).then((r) => ({ text: r.text }));
+
+      request
+        .then((extra) =>
+          finish({ pct: 100, status: "Complete", state: "done", ...extra }),
+        )
+        .catch((err) =>
+          finish({
+            state: "failed",
+            error:
+              err instanceof ApiError ? err.message : "Upload failed. Check your connection and try again.",
+          }),
+        );
+    });
   }, []);
 
   /** Adds a synthetic row for sources that are not real File objects (paste, Drive). */

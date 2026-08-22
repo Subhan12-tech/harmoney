@@ -158,3 +158,80 @@ export function apiPost<T>(path: string, body?: unknown, auth = false): Promise<
 export function apiGet<T>(path: string, auth = true): Promise<T> {
   return request<T>(path, { method: "GET" }, auth);
 }
+
+/* ============================================================
+   Multipart upload + review submission
+   ============================================================ */
+
+/** FormData must NOT get an explicit Content-Type — the browser has to set the
+ *  multipart boundary itself, and overriding it makes the server reject the body. */
+export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
+  const token = getToken();
+  if (!token) throw new ApiError(401, "You are signed out. Sign in again to continue.");
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      method: "POST",
+      body: form,
+      headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+    });
+  } catch {
+    throw new ApiError(0, `Cannot reach the Harmony API at ${API_BASE}. Is the backend running?`);
+  }
+
+  const text = await res.text();
+  let payload: unknown = null;
+  if (text) {
+    try {
+      payload = JSON.parse(text);
+    } catch {
+      payload = null;
+    }
+  }
+  if (!res.ok) throw new ApiError(res.status, messageFrom(res.status, payload));
+  return payload as T;
+}
+
+export interface UploadResult {
+  count: number;
+  skipped: string[];
+  text: string;
+  words: number;
+}
+
+/** Extracts text from one or more files without indexing them. */
+export function uploadForText(files: File[]): Promise<UploadResult> {
+  const form = new FormData();
+  files.forEach((f) => form.append("files", f));
+  return apiUpload<UploadResult>("/api/upload", form);
+}
+
+/** Indexes files into the evidence corpus this org's drafts are checked against. */
+export function uploadToCorpus(files: File[], company = "Unknown"): Promise<{ added: string[]; skipped: string[] }> {
+  const form = new FormData();
+  files.forEach((f) => form.append("files", f));
+  form.append("company", company);
+  return apiUpload("/api/upload_history", form);
+}
+
+export interface ReviewResult {
+  review_id: string;
+  document_id?: string;
+  company: string;
+  final_summary: string;
+  average_rating: number;
+  critic_verdict: string;
+  issues: unknown[];
+  evidence: unknown[];
+}
+
+/** Runs the full AI pipeline over a draft. Slow by nature — many model calls. */
+export function submitDraft(draft: string): Promise<ReviewResult> {
+  return apiPost<ReviewResult>("/api/review", { draft }, true);
+}
+
+/** Records the human decision. Approving publishes and adds it to history. */
+export function decideReview(reviewId: string, decision: "approve" | "reject"): Promise<unknown> {
+  return apiPost("/api/decision", { review_id: reviewId, decision }, true);
+}

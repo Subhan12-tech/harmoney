@@ -7,6 +7,7 @@ import { useRole } from "@/context/RoleContext";
 import { useAsyncResource } from "@/lib/useAsyncData";
 import { CURRENT_USER, WORKFLOW_STAGES, type Issue } from "@/lib/data";
 import { getReview } from "@/lib/reviews";
+import { ApiError, decideReview } from "@/lib/api";
 import {
   highlightStyle,
   outlineChipStyle,
@@ -37,6 +38,7 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
     */
   const [resolutions, setResolutions] = useState<Record<string, Resolution>>({});
   const [showApprove, setShowApprove] = useState(false);
+  const [deciding, setDeciding] = useState(false);
   /** null = not requested, "running" = analysis in flight, "done" = complete. */
   const [analysis, setAnalysis] = useState<"idle" | "running" | "done">("idle");
 
@@ -315,9 +317,22 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setStageIndex(0);
-                  toast("Document rejected and returned to draft.");
+                onClick={async () => {
+                  const reviewId = bundle?.detail.reviewId;
+                  if (!reviewId) {
+                    toast("This document has no completed analysis to reject.");
+                    return;
+                  }
+                  setDeciding(true);
+                  try {
+                    await decideReview(reviewId, "reject");
+                    setStageIndex(0);
+                    toast("Document rejected and returned to draft.");
+                  } catch (err) {
+                    toast(err instanceof ApiError ? err.message : "Could not record the rejection.");
+                  } finally {
+                    setDeciding(false);
+                  }
                 }}
                 style={{
                   background: "transparent",
@@ -379,14 +394,31 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
           </button>
           <button
             type="button"
-            onClick={() => {
-              setShowApprove(false);
-              setStageIndex(WORKFLOW_STAGES.length - 1);
-              toast("Document approved and queued for publication.");
+            onClick={async () => {
+              const reviewId = bundle?.detail.reviewId;
+              if (!reviewId) {
+                toast("This document has no completed analysis to approve.");
+                setShowApprove(false);
+                return;
+              }
+              setDeciding(true);
+              try {
+                await decideReview(reviewId, "approve");
+                setShowApprove(false);
+                setStageIndex(WORKFLOW_STAGES.length - 1);
+                // Approving also writes the document into the evidence corpus,
+                // so future drafts are checked against it.
+                toast("Approved and published. Added to your disclosure history.");
+              } catch (err) {
+                toast(err instanceof ApiError ? err.message : "Could not record the approval.");
+              } finally {
+                setDeciding(false);
+              }
             }}
-            style={{ ...primaryButtonStyle, fontWeight: 700 }}
+            disabled={deciding}
+            style={{ ...primaryButtonStyle, fontWeight: 700, opacity: deciding ? 0.6 : 1 }}
           >
-            Approve &amp; publish
+            {deciding ? "Publishing…" : "Approve & publish"}
           </button>
         </div>
       </Modal>
