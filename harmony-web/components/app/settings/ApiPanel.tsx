@@ -4,22 +4,16 @@ import { useEffect, useState } from "react";
 import { useRole } from "@/context/RoleContext";
 import { useAsyncData } from "@/lib/useAsyncData";
 import { getApiKeys } from "@/lib/data";
+import { ApiError, createApiKey, revokeApiKey } from "@/lib/api";
 import { outlineChipStyle, primaryButtonStyle } from "@/lib/style";
 import { useToast } from "../Toast";
 
 interface ApiKeyRow {
+  id: string;
   name: string;
   created: string;
   lastUsed: string;
   perm: string;
-}
-
-/** Only ever generated in the browser, on click — never during render. */
-function generateKey(): string {
-  const alphabet = "abcdef0123456789";
-  let body = "";
-  for (let i = 0; i < 32; i += 1) body += alphabet[Math.floor(Math.random() * alphabet.length)];
-  return `hk_live_${body}`;
 }
 
 export function ApiPanel() {
@@ -29,8 +23,9 @@ export function ApiPanel() {
   const seed = useAsyncData(() => getApiKeys(orgId), [orgId], []);
   const [created, setCreated] = useState<ApiKeyRow[]>([]);
   const [revoked, setRevoked] = useState<string[]>([]);
-  /** The plaintext secret, shown exactly once and never persisted. */
+  /** The plaintext secret, returned once by the server and never persisted. */
   const [revealed, setRevealed] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     setCreated([]);
@@ -38,16 +33,36 @@ export function ApiPanel() {
     setRevealed(null);
   }, [orgId]);
 
-  const keys = [...created, ...seed].filter((k) => !revoked.includes(k.name));
+  const keys = [...created, ...seed].filter((k) => !revoked.includes(k.id));
 
-  function createKey() {
-    const secret = generateKey();
+  async function createKey() {
+    if (busy) return;
+    setBusy(true);
     const name = `Key ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
-    setCreated((prev) => [
-      { name, created: "Just now", lastUsed: "Never", perm: "Read/Write" },
-      ...prev.filter((k) => k.name !== name),
-    ]);
-    setRevealed(secret);
+    try {
+      // The secret is minted server-side and returned exactly once — the server
+      // stores only a hash, so there is no way to show it again later.
+      const key = await createApiKey(name);
+      setCreated((prev) => [
+        { id: key.id, name: key.name || name, created: "Just now", lastUsed: "Never", perm: "Read/Write" },
+        ...prev,
+      ]);
+      setRevealed(key.key);
+    } catch (err) {
+      toast(err instanceof ApiError ? err.message : "Could not create the API key.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function revoke(k: ApiKeyRow) {
+    try {
+      await revokeApiKey(k.id);
+      setRevoked((prev) => [...prev, k.id]);
+      toast(`${k.name} revoked. Requests using it will now fail.`);
+    } catch (err) {
+      toast(err instanceof ApiError ? err.message : "Could not revoke the key.");
+    }
   }
 
   return (
@@ -58,8 +73,13 @@ export function ApiPanel() {
           analysis — they can never approve or publish.
         </p>
         {canManageSecurity && (
-          <button type="button" onClick={createKey} style={{ ...primaryButtonStyle, flex: "none" }}>
-            Create API key
+          <button
+            type="button"
+            onClick={createKey}
+            disabled={busy}
+            style={{ ...primaryButtonStyle, flex: "none", opacity: busy ? 0.6 : 1 }}
+          >
+            {busy ? "Creating…" : "Create API key"}
           </button>
         )}
       </div>
@@ -135,7 +155,7 @@ export function ApiPanel() {
               </tr>
             )}
             {keys.map((k) => (
-              <tr key={k.name}>
+              <tr key={k.id}>
                 <td style={{ color: "var(--text)" }}>{k.name}</td>
                 <td style={{ color: "var(--muted)" }}>{k.created}</td>
                 <td style={{ color: "var(--muted)" }}>{k.lastUsed}</td>
@@ -146,10 +166,7 @@ export function ApiPanel() {
                   {canManageSecurity && (
                     <button
                       type="button"
-                      onClick={() => {
-                        setRevoked((prev) => [...prev, k.name]);
-                        toast(`${k.name} revoked. Requests using it will now fail.`);
-                      }}
+                      onClick={() => revoke(k)}
                       style={{
                         fontSize: 12,
                         color: "color-mix(in srgb, var(--danger) 75%, white)",

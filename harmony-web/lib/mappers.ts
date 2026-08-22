@@ -190,6 +190,7 @@ export interface ApiMember {
 
 export function toTeamMember(m: ApiMember, currentUserId?: string): TeamMember {
   return {
+    userId: m.user_id,
     name: m.name || m.email,
     email: m.email,
     role: asRole(m.role),

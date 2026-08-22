@@ -7,6 +7,7 @@ import { ROLES, getTeamMembers, type Role, type TeamMember } from "@/lib/data";
 import { outlineChipStyle, primaryButtonStyle, secondaryButtonStyle, statusChipStyle } from "@/lib/style";
 import { Modal } from "./Modal";
 import { useToast } from "./Toast";
+import { ApiError, changeMemberRole, inviteMember, suspendMember } from "@/lib/api";
 
 const fieldLabelStyle: React.CSSProperties = {
   display: "block",
@@ -64,7 +65,7 @@ export function TeamMembers({ compact = false, showInvite = true }: { compact?: 
     [seed, invited, removed, edits],
   );
 
-  function submitInvite() {
+  async function submitInvite() {
     const email = inviteEmail.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setInviteError("Enter a valid work email address.");
@@ -80,12 +81,21 @@ export function TeamMembers({ compact = false, showInvite = true }: { compact?: 
       .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
       .join(" ");
 
+    try {
+      await inviteMember(email, inviteRole);
+    } catch (err) {
+      setInviteError(err instanceof ApiError ? err.message : "Could not send the invitation.");
+      return;
+    }
+
     setInvited((prev) => [...prev, { name, email, role: inviteRole, status: "Invited", lastActive: "—" }]);
     setInviteOpen(false);
     setInviteEmail("");
     setInviteError(null);
     setInviteRole("Reviewer");
-    toast(`Invitation sent to ${email}.`);
+    // No email is actually delivered yet — the backend records the invite and
+    // returns a token. Say what is true rather than "invitation sent".
+    toast(`${email} added to the workspace as ${inviteRole}.`);
   }
 
   function updateMember(email: string, patch: Partial<TeamMember>) {
@@ -265,11 +275,26 @@ export function TeamMembers({ compact = false, showInvite = true }: { compact?: 
                 id="manage-role"
                 className="h-select"
                 value={managing.role}
-                onChange={(e) => {
+                onChange={async (e) => {
                   const nextRole = e.target.value as Role;
+                  const previous = managing.role;
+                  if (!managing.userId) {
+                    toast("This member cannot be edited until their invitation is accepted.");
+                    return;
+                  }
+                  // Optimistic, then rolled back if the server refuses — the
+                  // backend enforces the same RBAC and will reject a change
+                  // the current user is not allowed to make.
                   updateMember(managing.email, { role: nextRole });
                   setManaging({ ...managing, role: nextRole });
-                  toast(`${managing.name} is now a ${nextRole}.`);
+                  try {
+                    await changeMemberRole(managing.userId, nextRole);
+                    toast(`${managing.name} is now a ${nextRole}.`);
+                  } catch (err) {
+                    updateMember(managing.email, { role: previous });
+                    setManaging({ ...managing, role: previous });
+                    toast(err instanceof ApiError ? err.message : "Could not change that role.");
+                  }
                 }}
                 style={fieldStyle}
               >
@@ -284,15 +309,27 @@ export function TeamMembers({ compact = false, showInvite = true }: { compact?: 
             <div className="flex flex-wrap justify-end gap-2.5">
               <button
                 type="button"
-                onClick={() => {
+                onClick={async () => {
                   const next = managing.status === "Suspended" ? "Active" : "Suspended";
-                  updateMember(managing.email, { status: next });
-                  setManaging(null);
-                  toast(
-                    next === "Suspended"
-                      ? `${managing.name} has been suspended.`
-                      : `${managing.name} has been reactivated.`,
-                  );
+                  const targetId = managing.userId;
+                  if (!targetId) {
+                    toast("This member cannot be edited until their invitation is accepted.");
+                    return;
+                  }
+                  const target = managing;
+                  try {
+                    // The endpoint toggles membership status server-side.
+                    await suspendMember(targetId);
+                    updateMember(target.email, { status: next });
+                    setManaging(null);
+                    toast(
+                      next === "Suspended"
+                        ? `${target.name} has been suspended.`
+                        : `${target.name} has been reactivated.`,
+                    );
+                  } catch (err) {
+                    toast(err instanceof ApiError ? err.message : "Could not update that member.");
+                  }
                 }}
                 style={{ ...secondaryButtonStyle, fontFamily: "inherit" }}
               >

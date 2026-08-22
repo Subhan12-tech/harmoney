@@ -83,6 +83,8 @@ export interface ActivityEntry {
 }
 
 export interface TeamMember {
+  /** Backend id — required by the role-change and suspend endpoints. */
+  userId?: string;
   name: string;
   email: string;
   role: Role;

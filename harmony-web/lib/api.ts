@@ -235,3 +235,85 @@ export function submitDraft(draft: string): Promise<ReviewResult> {
 export function decideReview(reviewId: string, decision: "approve" | "reject"): Promise<unknown> {
   return apiPost("/api/decision", { review_id: reviewId, decision }, true);
 }
+
+/* ============================================================
+   Settings actions
+   ============================================================ */
+
+/* ---- sessions ---- */
+export function revokeSession(jti: string): Promise<unknown> {
+  return apiPost(`/api/security/sessions/${encodeURIComponent(jti)}/revoke`, {}, true);
+}
+
+/* ---- API keys ---- */
+export interface CreatedApiKey {
+  id: string;
+  name: string;
+  /** Returned ONCE at creation and never again — the server stores only a hash. */
+  key: string;
+}
+
+export function createApiKey(name: string): Promise<CreatedApiKey> {
+  return apiPost<CreatedApiKey>("/api/security/api-keys", { name }, true);
+}
+
+export function revokeApiKey(id: string): Promise<unknown> {
+  return apiPost(`/api/security/api-keys/${encodeURIComponent(id)}/revoke`, {}, true);
+}
+
+/* ---- MFA (TOTP) ---- */
+export interface MfaSetup {
+  secret: string;
+  otpauth_uri: string;
+}
+
+export interface MfaEnabled {
+  status: string;
+  backup_codes: string[];
+  warning: string;
+}
+
+export function mfaStatus(): Promise<{ enabled: boolean }> {
+  return apiGet<{ enabled: boolean }>("/api/security/mfa/status");
+}
+
+export function mfaSetup(): Promise<MfaSetup> {
+  return apiPost<MfaSetup>("/api/security/mfa/setup", {}, true);
+}
+
+export function mfaEnable(code: string): Promise<MfaEnabled> {
+  return apiPost<MfaEnabled>("/api/security/mfa/enable", { code }, true);
+}
+
+export function mfaDisable(code: string): Promise<unknown> {
+  return apiPost("/api/security/mfa/disable", { code }, true);
+}
+
+/* ---- organization ---- */
+export interface OrgUpdate {
+  name?: string;
+  website?: string;
+  industry?: string;
+  size?: string;
+}
+
+export function updateOrg(patch: OrgUpdate): Promise<unknown> {
+  return request("/api/orgs/current", { method: "PATCH", body: JSON.stringify(patch) }, true);
+}
+
+export function getCurrentOrg(): Promise<{ id: string; name: string; website: string; industry: string; size: string }> {
+  return apiGet("/api/orgs/current");
+}
+
+/* ---- team ---- */
+export function inviteMember(email: string, role: string): Promise<{ invite_token: string }> {
+  return apiPost<{ invite_token: string }>("/api/orgs/invite", { email, role: role.toLowerCase() }, true);
+}
+
+export function changeMemberRole(userId: string, role: string): Promise<unknown> {
+  return apiPost("/api/orgs/members/role", { user_id: userId, role: role.toLowerCase() }, true);
+}
+
+export function suspendMember(userId: string): Promise<unknown> {
+  return apiPost(`/api/orgs/members/${encodeURIComponent(userId)}/suspend`, {}, true);
+}

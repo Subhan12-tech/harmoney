@@ -52,15 +52,32 @@ for r in (routes_auth.router, routes_org.router, routes_documents.router,
           routes_admin.router):
     app.include_router(r)
 
-# --- DEBUG: asli error browser mein dikhao (500 ki wajah samajhne ke liye) ---
+# --- Unhandled errors ---
+# Dev: full traceback in the response, because that is how you debug quickly.
+# Production: the traceback goes to the LOGS ONLY. Returning it to the client
+# hands anyone who can trigger a 500 your file paths, library versions and
+# often the surrounding code — a free map of the system. The client gets an
+# error id instead, which you can grep for in the Render logs.
 import traceback as _tb
+import uuid as _uuid_err
 from fastapi import Request as _Req
 from fastapi.responses import JSONResponse as _JR
+from auth import APP_ENV as _APP_ENV
+
+
 @app.exception_handler(Exception)
 async def _show_error(request: _Req, exc: Exception):
+    error_id = _uuid_err.uuid4().hex[:12]
     tb = "".join(_tb.format_exception(type(exc), exc, exc.__traceback__))
+    print(f"[error {error_id}] {request.method} {request.url.path}")
     print(tb)
-    return _JR(status_code=500, content={"detail": tb[-1400:]})
+
+    if _APP_ENV == "production":
+        return _JR(status_code=500, content={
+            "detail": "Something went wrong on our side. Quote this reference if you contact support.",
+            "error_id": error_id,
+        })
+    return _JR(status_code=500, content={"detail": tb[-1400:], "error_id": error_id})
 
 # pending reviews (transient — jaan-boojh kar permanent nahi rakhte, taake koi
 # "known contradiction" ka permanent record na bane). review_id -> result

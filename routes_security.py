@@ -69,9 +69,13 @@ def create_key(body: ApiKeyIn, org_id: str = Depends(current_org_id), user: User
     key_hash = hashlib.sha256(raw.encode()).hexdigest()
     with Session(engine) as s:
         k = ApiKey(org_id=org_id, name=body.name, prefix=prefix, key_hash=key_hash, created_by=user.id)
-        s.add(k); s.commit()
+        s.add(k); s.commit(); s.refresh(k)
+        kid, kname = k.id, k.name
     audit(org_id, user.id, "apikey.created", body.name)
-    return {"api_key": raw, "prefix": prefix,
+    # id and name are returned too: without the id the caller has just created a
+    # key it cannot revoke without re-listing. `key` mirrors `api_key` so the
+    # field name matches the rest of the API's create responses.
+    return {"id": kid, "name": kname, "key": raw, "api_key": raw, "prefix": prefix,
             "warning": "Store this key securely. You won't be able to view it again."}
 
 

@@ -6,6 +6,7 @@ import { getOrg } from "@/lib/data";
 import { primaryButtonStyle, secondaryButtonStyle } from "@/lib/style";
 import { Modal } from "../Modal";
 import { useToast } from "../Toast";
+import { ApiError, getCurrentOrg, updateOrg } from "@/lib/api";
 
 const labelStyle: React.CSSProperties = {
   display: "block",
@@ -40,10 +41,29 @@ export function OrganizationPanel() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  // Each workspace has its own record — reload the form when it changes.
+  // Load the real record for this workspace; fall back to whatever the local
+  // org list holds if the request fails, so the form is never blank.
   useEffect(() => {
+    let cancelled = false;
     setForm({ name: org.name, website: org.website, industry: org.industry, timezone: org.timezone });
+    getCurrentOrg()
+      .then((live) => {
+        if (cancelled) return;
+        setForm((prev) => ({
+          ...prev,
+          name: live.name ?? prev.name,
+          website: live.website ?? prev.website,
+          industry: live.industry ?? prev.industry,
+        }));
+      })
+      .catch(() => {
+        /* keep the fallback values */
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [org]);
 
   const fields: { key: keyof typeof form | "workspaceId"; label: string; value: string; locked?: boolean }[] = [
@@ -59,9 +79,19 @@ export function OrganizationPanel() {
       <form
         className="app-card flex flex-col gap-3"
         style={{ padding: 20, maxWidth: 560 }}
-        onSubmit={(e) => {
+        onSubmit={async (e) => {
           e.preventDefault();
-          toast("Organization settings saved.");
+          if (saving) return;
+          setSaving(true);
+          try {
+            // timezone is UI-only for now — the backend has no column for it.
+            await updateOrg({ name: form.name, website: form.website, industry: form.industry });
+            toast("Organization settings saved.");
+          } catch (err) {
+            toast(err instanceof ApiError ? err.message : "Could not save the organization settings.");
+          } finally {
+            setSaving(false);
+          }
         }}
         aria-labelledby="org-heading"
       >
@@ -95,8 +125,12 @@ export function OrganizationPanel() {
             Viewers can read organization settings but cannot change them.
           </p>
         ) : (
-          <button type="submit" style={{ ...secondaryButtonStyle, alignSelf: "flex-start" }}>
-            Save changes
+          <button
+            type="submit"
+            disabled={saving}
+            style={{ ...secondaryButtonStyle, alignSelf: "flex-start", opacity: saving ? 0.6 : 1 }}
+          >
+            {saving ? "Saving…" : "Save changes"}
           </button>
         )}
       </form>
