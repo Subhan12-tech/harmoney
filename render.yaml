@@ -58,8 +58,19 @@ services:
       - key: CORS_ORIGINS
         sync: false
 
-      # --- Email. Gmail needs an App Password, not the account password. ---
-      # Leave unset and verification is skipped rather than blocking signup.
+      # --- Email ---
+      # PREFER RESEND. Render's free tier blocks outbound SMTP ports, so Gmail
+      # cannot deliver from here however it is configured. Resend sends over
+      # HTTPS, which is never blocked. Set RESEND_API_KEY and the SMTP_* values
+      # below are ignored.
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM
+        sync: false
+
+      # SMTP fallback, for hosts that allow it. Gmail needs an App Password.
+      # Leave everything unset and verification is skipped rather than blocking
+      # signup.
       - key: SMTP_HOST
         value: smtp.gmail.com
       - key: SMTP_PORT

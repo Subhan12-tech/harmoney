@@ -14,11 +14,29 @@
 # rather than claiming an email was sent when none was.
 # ============================================================================
 
+import json
 import os
 import re
 import smtplib
 import ssl
+import urllib.error
+import urllib.request
 from email.message import EmailMessage
+
+# ----------------------------------------------------------------------------
+# Two transports. Resend wins when configured.
+# ----------------------------------------------------------------------------
+# Resend sends over HTTPS. That matters because several hosts - Render's free
+# tier among them - block outbound SMTP ports entirely to prevent spam, so
+# Gmail SMTP cannot work there no matter how it is configured. HTTPS is never
+# blocked, so this is the transport that actually works on a free deployment.
+RESEND_API_KEY = (os.getenv("RESEND_API_KEY") or "").strip()
+
+# Resend will only send from a domain you have verified. Until you have one, its
+# shared onboarding sender works but can ONLY deliver to the address that owns
+# the Resend account - which is enough to verify your own signup and receive
+# owner notifications.
+RESEND_FROM = (os.getenv("RESEND_FROM") or "").strip() or "Harmony <onboarding@resend.dev>"
 
 SMTP_HOST = (os.getenv("SMTP_HOST") or "").strip()
 SMTP_PORT = int(os.getenv("SMTP_PORT") or 587)
@@ -48,7 +66,38 @@ def email_working() -> bool:
 
 
 def email_configured() -> bool:
-    return bool(SMTP_HOST and SMTP_USER and SMTP_PASSWORD)
+    return bool(RESEND_API_KEY) or bool(SMTP_HOST and SMTP_USER and SMTP_PASSWORD)
+
+
+def transport() -> str:
+    if RESEND_API_KEY:
+        return "resend"
+    if SMTP_HOST and SMTP_USER and SMTP_PASSWORD:
+        return "smtp"
+    return "none"
+
+
+def _send_resend(to: str, subject: str, text: str, html: str) -> tuple[bool, str]:
+    payload = json.dumps({"from": RESEND_FROM, "to": [to], "subject": subject,
+                          "text": text, "html": html}).encode()
+    req = urllib.request.Request(
+        "https://api.resend.com/emails", data=payload, method="POST",
+        headers={"Authorization": f"Bearer {RESEND_API_KEY}",
+                 "Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            return (200 <= r.status < 300), "ok"
+    except urllib.error.HTTPError as e:
+        body = e.read().decode(errors="replace")[:300]
+        # 403 here is nearly always the unverified-domain rule: the shared
+        # onboarding sender may only deliver to the account owner's address.
+        if e.code == 403:
+            return False, ("Resend rejected the recipient. The shared onboarding sender can only "
+                           "email the address that owns the Resend account. Verify a domain at "
+                           "resend.com/domains and set RESEND_FROM to an address on it. " + body)
+        return False, f"Resend HTTP {e.code}: {body}"
+    except Exception as e:
+        return False, f"{type(e).__name__}: {e}"
 
 
 def config_problem() -> str | None:
@@ -58,10 +107,14 @@ def config_problem() -> str | None:
     otherwise silent: verification is skipped when SMTP is unconfigured, so
     signup keeps working and nothing says the codes are not being sent.
     """
+    if RESEND_API_KEY:
+        return None          # validated for real by verify_connection()
+
     missing = [n for n, v in (("SMTP_HOST", SMTP_HOST), ("SMTP_USER", SMTP_USER),
                               ("SMTP_PASSWORD", SMTP_PASSWORD)) if not v]
     if missing:
-        return f"not configured - missing {', '.join(missing)}"
+        return ("not configured - missing " + ", ".join(missing) +
+                ". On a host that blocks SMTP (Render free tier does), set RESEND_API_KEY instead.")
 
     # Gmail rejects a normal account password over SMTP. App Passwords are 16
     # characters, usually shown in four groups of four.
@@ -83,6 +136,26 @@ def verify_connection() -> tuple[bool, str]:
     if not email_configured():
         _EMAIL_HEALTHY = False
         return False, "not configured"
+
+    if RESEND_API_KEY:
+        # Cheap credential check that sends nothing.
+        req = urllib.request.Request(
+            "https://api.resend.com/domains",
+            headers={"Authorization": f"Bearer {RESEND_API_KEY}"})
+        try:
+            with urllib.request.urlopen(req, timeout=15):
+                _EMAIL_HEALTHY = True
+                return True, "ok (resend)"
+        except urllib.error.HTTPError as e:
+            _EMAIL_HEALTHY = False
+            if e.code in (401, 403):
+                return False, "Resend rejected RESEND_API_KEY"
+            # Any other status still proves the API is reachable and the key parsed.
+            _EMAIL_HEALTHY = True
+            return True, "ok (resend)"
+        except Exception as e:
+            _EMAIL_HEALTHY = False
+            return False, f"Resend unreachable: {type(e).__name__}: {e}"
     try:
         if SMTP_PORT == 465:
             with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=15,
@@ -104,7 +177,13 @@ def verify_connection() -> tuple[bool, str]:
 
 
 def _send(to: str, subject: str, text: str, html: str) -> bool:
-    """Returns True if the message was actually handed to an SMTP server."""
+    """Returns True if the message was actually accepted by a provider."""
+    if RESEND_API_KEY:
+        ok, detail = _send_resend(to, subject, text, html)
+        if not ok:
+            print(f"Resend send failed: {detail}")
+        return ok
+
     if not email_configured():
         # Not an error: this is the documented development path.
         print(f"[email not configured] would send to {to}: {subject}\n{text}")

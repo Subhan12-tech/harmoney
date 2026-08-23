@@ -61,12 +61,12 @@ else:
     _ok, _detail = _emailer.verify_connection()
     _EMAIL_PROBLEM = None if _ok else _detail
     if not _ok:
-        print(f"EMAIL: SMTP login FAILED - {_detail}")
+        print(f"EMAIL: {_emailer.transport()} check FAILED - {_detail}")
 if _EMAIL_PROBLEM:
     print("EMAIL: verification codes will NOT be sent; signup proceeds WITHOUT verifying "
           "so users are not locked out of a product whose code can never arrive.")
 else:
-    print("EMAIL: SMTP login ok - verification codes will be sent.")
+    print(f"EMAIL: {_emailer.transport()} ok - verification codes will be sent.")
 for r in (routes_auth.router, routes_org.router, routes_documents.router,
           routes_security.router, routes_billing.router, routes_sso.router,
           routes_admin.router):
@@ -362,6 +362,7 @@ def healthz():
         "database": "up" if db_ok else "down",
         "engine": dialect,
         "email": "ok" if not _EMAIL_PROBLEM else "unavailable",
+        "email_transport": _emailer.transport(),
     }
     if _EMAIL_PROBLEM:
         body["email_detail"] = _EMAIL_PROBLEM
