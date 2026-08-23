@@ -383,26 +383,39 @@ import os as _os
 # UI and the API share an origin there is no CORS to configure or get wrong -
 # which was the single most likely thing to break in a split deployment.
 #
-# If the export is missing (a bare API deploy, or a build that skipped the Node
-# stage), the built-in single-file dashboard still answers, so the service is
-# never left with no interface at all.
+# There is no second UI any more. The old single-file dashboard used to answer
+# here as a fallback, and having two live interfaces was actively harmful: they
+# drifted, and a feature added to one silently did not exist in the other. If
+# the export is missing, that means the Docker Node stage did not run, and the
+# right response is to say so plainly rather than quietly serve something else.
 _HERE = _os.path.dirname(__file__)
 _WEB_DIR = _os.path.join(_HERE, "harmony-web", "out")
 _HAS_WEB = _os.path.isdir(_WEB_DIR) and _os.path.isfile(_os.path.join(_WEB_DIR, "index.html"))
 
-
-def _home_fallback() -> str:
-    with open(_os.path.join(_HERE, "frontend.html"), encoding="utf-8") as f:
-        return f.read()
+_NO_UI_PAGE = """<!doctype html>
+<meta charset="utf-8"><title>Harmony - UI not built</title>
+<style>body{background:#08090a;color:#f2f2f3;font:14px/1.6 system-ui,sans-serif;
+display:grid;place-items:center;min-height:100vh;margin:0}
+div{max-width:460px;padding:28px}code{background:#16181b;padding:2px 6px;border-radius:5px}
+a{color:#8f9aa8}</style>
+<div>
+  <h1 style="font-size:19px;font-weight:600;margin:0 0 10px">The interface was not built</h1>
+  <p style="color:#8b8f96">The API is running, but <code>harmony-web/out</code> is missing, so
+  there is nothing to serve at this address.</p>
+  <p style="color:#8b8f96">Locally, run <code>npm run build</code> in <code>harmony-web/</code>.
+  On a deploy, the Docker Node stage did not complete - check the build log.</p>
+  <p style="color:#8b8f96">The API itself is unaffected: <a href="/docs">/docs</a> ·
+  <a href="/healthz">/healthz</a></p>
+</div>"""
 
 
 if not _HAS_WEB:
-    print("harmony-web/out not found - serving the built-in dashboard instead. "
-          "Run `npm run build` in harmony-web/ to serve the product UI.")
+    print("harmony-web/out not found - the product UI will NOT be served. "
+          "Run `npm run build` in harmony-web/, or check the Docker Node stage.")
 
     @app.get("/", response_class=HTMLResponse)
     def home():
-        return _home_fallback()
+        return HTMLResponse(_NO_UI_PAGE, status_code=503)
 
 
 # ----------------------------------------------------------------------------
