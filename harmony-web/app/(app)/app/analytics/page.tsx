@@ -6,6 +6,7 @@ import { getAnalytics } from "@/lib/data";
 import { LineChart } from "@/components/app/LineChart";
 import { BarList } from "@/components/app/BarList";
 import { SkeletonCard } from "@/components/app/Skeleton";
+import { PageHeader } from "@/components/app/PageHeader";
 
 export default function AnalyticsPage() {
   const { orgId } = useRole();
@@ -28,6 +29,8 @@ export default function AnalyticsPage() {
 
   return (
     <>
+      <PageHeader title="Analytics" blurb="Findings over time, by severity and document type." />
+
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2" style={{ marginBottom: 16 }}>
         <section className="app-card" style={{ padding: 20 }} aria-labelledby="score-heading">
           <div className="flex items-start justify-between">

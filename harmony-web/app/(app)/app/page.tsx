@@ -6,6 +6,7 @@ import { useAsyncData } from "@/lib/useAsyncData";
 import { getKpis, getPendingApprovals, getTeamActivity } from "@/lib/data";
 import { KpiCard } from "@/components/app/KpiCard";
 import { DocTable } from "@/components/app/DocTable";
+import { PageHeader } from "@/components/app/PageHeader";
 
 export default function DashboardPage() {
   const { orgId } = useRole();
@@ -16,6 +17,8 @@ export default function DashboardPage() {
 
   return (
     <>
+      <PageHeader title="Dashboard" blurb="Where your disclosures stand, and what is waiting on you." />
+
       <section aria-label="Key metrics">
         <div className="grid grid-cols-2 gap-3.5 xl:grid-cols-4" style={{ marginBottom: 20 }}>
           {kpis.map((k) => (

@@ -12,6 +12,7 @@ import { UploadList } from "@/components/app/UploadList";
 import { useToast } from "@/components/app/Toast";
 import { ClipboardIcon, DriveIcon, FolderIcon, UploadIcon } from "@/components/app/icons";
 import { accent2ButtonStyle, primaryButtonStyle, secondaryButtonStyle } from "@/lib/style";
+import { PageHeader } from "@/components/app/PageHeader";
 
 const TYPES: (DocType | "All types")[] = [
   "All types",
@@ -116,6 +117,8 @@ export default function DocumentsPage() {
 
   return (
     <>
+      <PageHeader title="Documents" blurb="Check a draft against your disclosure history, or add to the evidence library." />
+
       {/* The one control that actually runs the pipeline. */}
       <SubmitDraftPanel />
 

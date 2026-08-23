@@ -4,6 +4,7 @@ import { useRole } from "@/context/RoleContext";
 import { useAsyncData } from "@/lib/useAsyncData";
 import { getTeamActivity } from "@/lib/data";
 import { TeamMembers } from "@/components/app/TeamMembers";
+import { PageHeader } from "@/components/app/PageHeader";
 
 export default function TeamPage() {
   const { orgId } = useRole();
@@ -11,6 +12,8 @@ export default function TeamPage() {
 
   return (
     <>
+      <PageHeader title="Team" blurb="Who is on your workspace, and what they have been doing." />
+
       <TeamMembers />
 
       <section className="app-card" style={{ padding: 20, marginTop: 16 }} aria-labelledby="team-activity-heading">

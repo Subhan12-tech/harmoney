@@ -16,6 +16,7 @@ import {
 import { relativeTime } from "@/lib/mappers";
 import { useToast } from "@/components/app/Toast";
 import { Skeleton } from "@/components/app/Skeleton";
+import { PageHeader } from "@/components/app/PageHeader";
 
 /**
  * Platform admin — the licence queue.
@@ -103,19 +104,15 @@ export default function AdminPage() {
 
   return (
     <>
-      <div className="flex items-center justify-between gap-4" style={{ marginBottom: 16 }}>
-        <div>
-          <h1 className="font-heading" style={{ fontSize: 19, fontWeight: 600, margin: 0 }}>
-            Platform admin
-          </h1>
-          <p style={{ color: "var(--muted)", fontSize: 12.5, margin: "4px 0 0" }}>
-            Grant and withdraw access to Harmony. Suspending never deletes data.
-          </p>
-        </div>
-        <button type="button" onClick={() => void load()} style={ghostButton}>
-          Refresh
-        </button>
-      </div>
+      <PageHeader
+        title="Platform admin"
+        blurb="Grant and withdraw access to Harmony. Suspending never deletes data."
+        actions={
+          <button type="button" onClick={() => void load()} style={ghostButton}>
+            Refresh
+          </button>
+        }
+      />
 
       {stats && (
         <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", marginBottom: 18 }}>
