@@ -10,7 +10,7 @@ import { UploadZone } from "@/components/app/UploadZone";
 import { SubmitDraftPanel } from "@/components/app/SubmitDraftPanel";
 import { UploadList } from "@/components/app/UploadList";
 import { useToast } from "@/components/app/Toast";
-import { ClipboardIcon, DriveIcon, FolderIcon, UploadIcon } from "@/components/app/icons";
+import { FolderIcon } from "@/components/app/icons";
 import { accent2ButtonStyle, primaryButtonStyle, secondaryButtonStyle } from "@/lib/style";
 import { PageHeader } from "@/components/app/PageHeader";
 
@@ -74,7 +74,6 @@ export default function DocumentsPage() {
   // carry different `webkitdirectory` settings.
   const folderInput = useRef<HTMLInputElement>(null);
   const corpusFileInput = useRef<HTMLInputElement>(null);
-  const draftInput = useRef<HTMLInputElement>(null);
 
   const filtered = useMemo(
     () =>
@@ -91,44 +90,26 @@ export default function DocumentsPage() {
     if (files?.length) addFiles(files, kind);
   }
 
-  async function pasteText() {
-    try {
-      const text = await navigator.clipboard.readText();
-      if (!text.trim()) {
-        toast("Clipboard is empty — copy your draft first.");
-        return;
-      }
-      // Hand it to the review panel rather than faking an upload row.
-      const box = document.querySelector<HTMLTextAreaElement>("#check-heading ~ textarea, section textarea");
-      if (box) {
-        const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set;
-        setter?.call(box, text);
-        box.dispatchEvent(new Event("input", { bubbles: true }));
-        box.scrollIntoView({ behavior: "smooth", block: "center" });
-        toast("Draft pasted. Press “Check this document” to run it.");
-      } else {
-        toast("Paste it into the Check a document box above.");
-      }
-    } catch {
-      // Clipboard read is permission-gated and fails outright in some browsers.
-      toast("Clipboard access was blocked. Use “Upload draft” instead.");
-    }
-  }
-
   return (
     <>
-      <PageHeader title="Documents" blurb="Check a draft against your disclosure history, or add to the evidence library." />
+      <PageHeader
+        title="Documents"
+        blurb="Two things happen here: you build the evidence library once, then check each new draft against it."
+      />
 
-      {/* The one control that actually runs the pipeline. */}
-      <SubmitDraftPanel />
-
-      {/* ---- Upload cards ---- */}
-      <section aria-label="Add documents">
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2" style={{ marginBottom: 16 }}>
+      {/* Step 1 first, because a review against an empty corpus finds nothing.
+          The order on the page is the order of the work. */}
+      <section aria-label="Add past documents" style={{ marginBottom: 22 }}>
+        <StepLabel
+          n={1}
+          title="Add your past documents"
+          detail="Everything your company has already said - filings, transcripts, press releases, investor letters. Harmony checks new drafts against these. You only do this once, then add to it over time."
+        />
+        <div className="grid grid-cols-1 gap-4">
           <UploadZone
             kind="corpus"
-            title="Historical corpus"
-            description="Upload an entire folder of prior filings, transcripts, and letters. Harmony indexes them as evidence for future reviews."
+            title="Evidence library"
+            description="Old documents - things you have already published. These are never reviewed; they are what future drafts get checked against."
             dropHint="or drop a folder here"
             meta={["PDF · DOCX · TXT · MD · HTML", "Up to 5 GB", "Encrypted at rest"]}
             onDropFiles={(files) => addFiles(files, "corpus")}
@@ -149,36 +130,17 @@ export default function DocumentsPage() {
             }
           />
 
-          <UploadZone
-            kind="draft"
-            title="Current drafts"
-            badge="Send for AI review"
-            description="Drop the release you are preparing now. Harmony compares it to your corpus and returns cited issues in under 2 minutes."
-            meta={["Assign reviewer", "Set deadline", "Notify on complete"]}
-            onDropFiles={(files) => addFiles(files, "draft")}
-            actions={
-              <>
-                <button
-                  type="button"
-                  style={pillButton({
-                    ...primaryButtonStyle,
-                    padding: "8px 14px",
-                    fontSize: 13,
-                  })}
-                  onClick={() => draftInput.current?.click()}
-                >
-                  <UploadIcon size={14} strokeWidth={1.8} />
-                  Upload draft
-                </button>
-                <button type="button" style={pillButton(compactSecondary)} onClick={pasteText}>
-                  <ClipboardIcon size={14} strokeWidth={1.8} />
-                  Paste text
-                </button>
-
-              </>
-            }
-          />
         </div>
+      </section>
+
+      {/* Step 2: the draft being prepared now. */}
+      <section aria-label="Check a new draft" style={{ marginBottom: 22 }}>
+        <StepLabel
+          n={2}
+          title="Check a draft you are about to publish"
+          detail="Paste or upload the document you are preparing. Harmony compares it against everything from step 1 and returns each conflict with the prior statement quoted."
+        />
+        <SubmitDraftPanel />
       </section>
 
       {/* Hidden pickers. `webkitdirectory` is set via a ref-free attribute cast
@@ -206,19 +168,6 @@ export default function DocumentsPage() {
         accept=".pdf,.docx,.txt,.md,.html"
         onChange={(e) => {
           handlePicked(e.target.files, "corpus");
-          e.target.value = "";
-        }}
-      />
-      <input
-        ref={draftInput}
-        type="file"
-        multiple
-        hidden
-        aria-hidden="true"
-        tabIndex={-1}
-        accept=".pdf,.docx,.txt,.md,.html"
-        onChange={(e) => {
-          handlePicked(e.target.files, "draft");
           e.target.value = "";
         }}
       />
@@ -275,7 +224,11 @@ export default function DocumentsPage() {
         <button
           type="button"
           style={{ ...primaryButtonStyle, marginLeft: "auto" }}
-          onClick={() => draftInput.current?.click()}
+          onClick={() =>
+            document
+              .getElementById("check-heading")
+              ?.scrollIntoView({ behavior: "smooth", block: "center" })
+          }
         >
           New review
         </button>
@@ -286,5 +239,37 @@ export default function DocumentsPage() {
         <DocTable documents={filtered} />
       </div>
     </>
+  );
+}
+
+/** A numbered step heading. The page is a two-step process and should read like one. */
+function StepLabel({ n, title, detail }: { n: number; title: string; detail: string }) {
+  return (
+    <div className="flex" style={{ gap: 12, marginBottom: 12 }}>
+      <span
+        aria-hidden
+        style={{
+          flex: "none",
+          width: 22,
+          height: 22,
+          borderRadius: "50%",
+          border: "1px solid var(--border-strong)",
+          color: "var(--muted)",
+          fontSize: 11.5,
+          fontWeight: 550,
+          display: "grid",
+          placeItems: "center",
+          marginTop: 1,
+        }}
+      >
+        {n}
+      </span>
+      <div>
+        <h2 style={{ fontSize: 15, fontWeight: 550, letterSpacing: "-0.014em", margin: 0 }}>{title}</h2>
+        <p style={{ color: "var(--muted)", fontSize: 12.5, lineHeight: 1.6, margin: "3px 0 0", maxWidth: 640 }}>
+          {detail}
+        </p>
+      </div>
+    </div>
   );
 }
