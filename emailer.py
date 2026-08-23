@@ -138,20 +138,23 @@ def verify_connection() -> tuple[bool, str]:
         return False, "not configured"
 
     if RESEND_API_KEY:
-        # Cheap credential check that sends nothing.
+        # There is no send-nothing endpoint a SENDING-ONLY key can call. /domains
+        # needs Full access, so probing it rejects a perfectly good sending key -
+        # which is exactly the failure this check caused. Treat 401/403 as
+        # "cannot verify from here" rather than "bad key", and let the first real
+        # send be the judge. Reachability is still worth confirming.
         req = urllib.request.Request(
             "https://api.resend.com/domains",
             headers={"Authorization": f"Bearer {RESEND_API_KEY}"})
         try:
             with urllib.request.urlopen(req, timeout=15):
                 _EMAIL_HEALTHY = True
-                return True, "ok (resend)"
+                return True, "ok (resend, key verified)"
         except urllib.error.HTTPError as e:
-            _EMAIL_HEALTHY = False
-            if e.code in (401, 403):
-                return False, "Resend rejected RESEND_API_KEY"
-            # Any other status still proves the API is reachable and the key parsed.
             _EMAIL_HEALTHY = True
+            if e.code in (401, 403):
+                return True, ("ok (resend, reachable; key is sending-only so it could not be "
+                              "verified here - a send will confirm it)")
             return True, "ok (resend)"
         except Exception as e:
             _EMAIL_HEALTHY = False
@@ -179,9 +182,15 @@ def verify_connection() -> tuple[bool, str]:
 def _send(to: str, subject: str, text: str, html: str) -> bool:
     """Returns True if the message was actually accepted by a provider."""
     if RESEND_API_KEY:
+        global _EMAIL_HEALTHY
         ok, detail = _send_resend(to, subject, text, html)
         if not ok:
             print(f"Resend send failed: {detail}")
+            # A real send is the only authoritative test. A rejected key means
+            # email is not working, and signup must stop demanding a code that
+            # will never arrive.
+            if "401" in detail or "403" in detail or "api_key" in detail.lower():
+                _EMAIL_HEALTHY = False
         return ok
 
     if not email_configured():

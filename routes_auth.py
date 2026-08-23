@@ -47,7 +47,11 @@ def signup(body: SignupIn, request: Request):
     # verify step, or called this endpoint directly, must still fail.
     # Skipped entirely when email is not configured, so a deployment without
     # SMTP is usable rather than impossible to sign up for.
-    if emailer.email_working() and not _email_is_verified(body.email):
+    # Gated on whether a code was actually DELIVERED to this address, not on a
+    # global health flag. If the send failed - blocked port, rejected key,
+    # provider outage - there is no code to enter, and demanding one locks the
+    # user out of the product entirely. That happened in production once.
+    if _code_was_sent(body.email) and not _email_is_verified(body.email):
         raise HTTPException(400, "Verify your email address before creating a workspace.")
 
     with Session(engine) as s:
@@ -201,11 +205,18 @@ def send_code(body: SendCodeIn):
         s.commit()
 
         code = f"{secrets.randbelow(1_000_000):06d}"
-        s.add(EmailCode(email=email, code_hash=_hash_code(code), purpose="signup",
-                        expires_at=datetime.utcnow() + timedelta(minutes=CODE_TTL_MINUTES)))
-        s.commit()
+        row = EmailCode(email=email, code_hash=_hash_code(code), purpose="signup",
+                        expires_at=datetime.utcnow() + timedelta(minutes=CODE_TTL_MINUTES))
+        s.add(row); s.commit(); s.refresh(row)
+        row_id = row.id
 
     sent = emailer.send_verification_code(email, code, CODE_TTL_MINUTES)
+    if sent:
+        with Session(engine) as s:
+            r = s.get(EmailCode, row_id)
+            if r:
+                r.delivered = True
+                s.add(r); s.commit()
     if not sent:
         # No SMTP configured. Say so plainly rather than claiming an email was
         # sent - and in development only, hand back the code so the flow works.
@@ -252,6 +263,15 @@ def check_code(body: CheckCodeIn):
         s.add(row); s.commit()
 
     return {"status": "verified"}
+
+
+def _code_was_sent(email: str) -> bool:
+    """True if a code was successfully delivered to this address and is still live."""
+    with Session(engine) as s:
+        row = s.exec(select(EmailCode).where(EmailCode.email == email.strip().lower(),
+                                             EmailCode.purpose == "signup",
+                                             EmailCode.delivered == True)).first()
+        return bool(row and row.expires_at >= datetime.utcnow())
 
 
 def _email_is_verified(email: str) -> bool:

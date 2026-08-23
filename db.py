@@ -187,6 +187,7 @@ class EmailCode(SQLModel, table=True):
     code_hash: str = ""            # sha256; the plain code only ever exists in the email
     purpose: str = "signup"        # signup / reset
     attempts: int = 0              # wrong guesses, to stop brute force
+    delivered: bool = False        # the send actually succeeded
     verified: bool = False
     expires_at: datetime
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -215,6 +216,7 @@ _COLUMN_PATCHES = {
     "document": [("risk", "VARCHAR NOT NULL DEFAULT 'Low'")],
     "review": [("issues_json", "VARCHAR NOT NULL DEFAULT '[]'"),
                ("evidence_json", "VARCHAR NOT NULL DEFAULT '[]'")],
+    "emailcode": [("delivered", "BOOLEAN NOT NULL DEFAULT FALSE")],
     "organization": [("status", "VARCHAR NOT NULL DEFAULT 'active'"),
                      ("status_reason", "VARCHAR NOT NULL DEFAULT ''"),
                      ("activated_at", "TIMESTAMP NULL"),
