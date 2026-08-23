@@ -306,10 +306,45 @@ def review_stream(body: ReviewIn, user: User = Depends(require_role("editor")),
 @app.post("/api/decision")
 def decision(body: DecisionIn, user: User = Depends(require_role("reviewer")),
              org_id: str = Depends(current_org_id)):
-    # approve/reject sirf REVIEWER+ (RBAC). Org-scoped.
-    result = PENDING.get(body.review_id)
-    if not result:
-        return JSONResponse({"error": "Review not found or already resolved."}, status_code=404)
+    """Approve or reject a review. REVIEWER+ only, org-scoped.
+
+    Reads the review from the DATABASE, not from the in-memory PENDING dict.
+
+    PENDING did not survive a restart, and a free-tier service sleeps after
+    fifteen minutes - so every approve and reject returned 404 "Review not found
+    or already resolved" while the review sat perfectly intact in Postgres. Any
+    redeploy did the same. It only ever worked in a process that had served the
+    review itself.
+
+    It was also a tenant leak: PENDING was keyed by review id alone, with no org
+    check, so a reviewer in one workspace could decide another workspace's
+    review by id. Loading through the org filter closes that.
+    """
+    with Session(engine) as s:
+        rev = s.get(Review, body.review_id)
+        # The org filter is the access check, not a nicety.
+        if not rev or rev.org_id != org_id:
+            return JSONResponse({"error": "Review not found."}, status_code=404)
+        if rev.status != "pending":
+            return JSONResponse(
+                {"error": f"This review was already {rev.status}."}, status_code=409)
+        try:
+            issues = json.loads(rev.issues_json or "[]")
+        except (json.JSONDecodeError, TypeError):
+            issues = []
+        try:
+            evidence = json.loads(rev.evidence_json or "[]")
+        except (json.JSONDecodeError, TypeError):
+            evidence = []
+        result = {
+            "company": rev.company,
+            "final_summary": rev.report,
+            "average_rating": rev.average_rating,
+            "critic_verdict": rev.critic_verdict,
+            "issues": issues,
+            "evidence": evidence,
+            "document_id": rev.document_id,
+        }
 
     def _update_status(new_status):
         with Session(engine) as s:
