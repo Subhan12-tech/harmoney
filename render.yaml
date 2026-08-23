@@ -58,6 +58,23 @@ services:
       - key: CORS_ORIGINS
         sync: false
 
+      # --- Email. Gmail needs an App Password, not the account password. ---
+      # Leave unset and verification is skipped rather than blocking signup.
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+
+      # Used to build links inside emails.
+      - key: PUBLIC_URL
+        sync: false
+
       # NOTE: no FRONTEND_URL and no separate UI service. harmony-web is built
       # into this image (see Dockerfile stage 1) and served from the same origin,
       # so there is nothing to point at and no CORS to configure.

@@ -4,7 +4,14 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ROLES, type Role } from "@/lib/data";
-import { ApiError, apiPost, saveSession, type Session } from "@/lib/api";
+import {
+  ApiError,
+  apiPost,
+  checkVerificationCode,
+  saveSession,
+  sendVerificationCode,
+  type Session,
+} from "@/lib/api";
 import { primaryButtonStyle, secondaryButtonStyle } from "@/lib/style";
 import { BrandPanel } from "./BrandPanel";
 import { CheckIcon } from "@/components/app/icons";
@@ -109,6 +116,8 @@ export function SignupFlow() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [resent, setResent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  /** Shown only when the server has no SMTP configured (development). */
+  const [devCode, setDevCode] = useState<string | null>(null);
 
   const codeRefs = useRef<(HTMLInputElement | null)[]>([]);
   const score = passwordScore(password);
@@ -152,6 +161,35 @@ export function SignupFlow() {
   async function onContinue() {
     if (!validate()) return;
     if (submitting) return;
+
+    if (step.key === "account") {
+      setSubmitting(true);
+      try {
+        const r = await sendVerificationCode(email.trim());
+        setDevCode(r.dev_code ?? null);
+        setResent(false);
+        go("verify");
+      } catch (err) {
+        // A taken address is reported here rather than three steps later.
+        setErrors({ email: err instanceof ApiError ? err.message : "Could not send the verification code." });
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
+
+    if (step.key === "verify") {
+      setSubmitting(true);
+      try {
+        await checkVerificationCode(email.trim(), code.join(""));
+        go("organization");
+      } catch (err) {
+        setErrors({ code: err instanceof ApiError ? err.message : "Could not check that code." });
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
 
     if (step.key === "organization") {
       setSubmitting(true);
@@ -360,7 +398,11 @@ export function SignupFlow() {
           {step.key === "verify" && (
             <Panel
               title="Verify your email"
-              blurb={`We sent a six-digit code to ${email || "your work email"}.`}
+              blurb={
+                devCode
+                  ? `Email is not configured on this server, so the code is shown here instead: ${devCode}`
+                  : `We sent a six-digit code to ${email || "your work email"}.`
+              }
               onSubmit={onContinue}
             >
               <fieldset style={{ border: "none", margin: 0, padding: 0 }}>
@@ -403,7 +445,17 @@ export function SignupFlow() {
                     Did not get it?{" "}
                     <button
                       type="button"
-                      onClick={() => setResent(true)}
+                      onClick={async () => {
+                        try {
+                          const r = await sendVerificationCode(email.trim());
+                          setDevCode(r.dev_code ?? null);
+                          setResent(true);
+                        } catch (err) {
+                          setErrors({
+                            code: err instanceof ApiError ? err.message : "Could not resend the code.",
+                          });
+                        }
+                      }}
                       style={{
                         color: "var(--accent)",
                         background: "none",
@@ -653,7 +705,11 @@ export function SignupFlow() {
                 {submitting
                   ? step.key === "organization"
                     ? "Creating workspace…"
-                    : "Sending…"
+                    : step.key === "account"
+                      ? "Sending code…"
+                      : step.key === "verify"
+                        ? "Checking…"
+                        : "Sending…"
                   : "Continue"}
               </button>
               {step.key === "invite" && (

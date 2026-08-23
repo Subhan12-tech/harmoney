@@ -83,7 +83,24 @@ def _set_status(org_id: str, status: str, admin: User, reason: str = ""):
 @router.post("/orgs/{org_id}/approve")
 def approve_org(org_id: str, admin: User = Depends(require_superadmin)):
     """Grant access. The customer can use the product from the next request."""
-    return _set_status(org_id, "active", admin)
+    result = _set_status(org_id, "active", admin)
+
+    # Let them know. Best-effort: the approval has already been recorded, and a
+    # mail failure must not make it look like it did not happen.
+    try:
+        import os
+        import emailer
+        from db import Membership as _M
+        with Session(engine) as s:
+            m = s.exec(select(_M).where(_M.org_id == org_id, _M.role == "owner")).first()
+            u = s.get(User, m.user_id) if m else None
+        if u:
+            base = (os.getenv("PUBLIC_URL") or "").strip().rstrip("/")
+            emailer.send_workspace_approved(u.email, result["name"], f"{base}/app/" if base else "your Harmony URL")
+    except Exception as e:
+        print("approval email failed:", e)
+
+    return result
 
 
 @router.post("/orgs/{org_id}/suspend")

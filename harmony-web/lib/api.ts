@@ -398,3 +398,22 @@ export function adminSuspend(orgId: string, reason = ""): Promise<AdminOrg> {
 export function adminReactivate(orgId: string): Promise<AdminOrg> {
   return apiPost(`/api/admin/orgs/${encodeURIComponent(orgId)}/reactivate`, {}, true);
 }
+
+/* ============================================================
+   Email verification
+   ============================================================ */
+
+export interface SendCodeResult {
+  status: "sent" | "not_sent";
+  detail: string;
+  /** Development only, when SMTP is not configured. Never present in production. */
+  dev_code?: string;
+}
+
+export function sendVerificationCode(email: string): Promise<SendCodeResult> {
+  return apiPost<SendCodeResult>("/api/auth/send-code", { email });
+}
+
+export function checkVerificationCode(email: string, code: string): Promise<{ status: string }> {
+  return apiPost<{ status: string }>("/api/auth/check-code", { email, code });
+}

@@ -178,6 +178,20 @@ class Subscription(SQLModel, table=True):
     cycle_start: datetime = Field(default_factory=datetime.utcnow)
 
 
+class EmailCode(SQLModel, table=True):
+    # A verification code, keyed by email rather than user: the code is sent
+    # BEFORE the account exists, so signup can require a verified address
+    # instead of accepting any six digits the way the old flow did.
+    id: str = Field(default_factory=_uuid, primary_key=True)
+    email: str = Field(index=True)
+    code_hash: str = ""            # sha256; the plain code only ever exists in the email
+    purpose: str = "signup"        # signup / reset
+    attempts: int = 0              # wrong guesses, to stop brute force
+    verified: bool = False
+    expires_at: datetime
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 class HistoryItem(SQLModel, table=True):
     # ek record har baar jab kuch evidence history (Qdrant) mein add hota hai — paste,
     # file upload, ya ek approved/published document — taake Evidence Library mein
