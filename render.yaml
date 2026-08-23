@@ -59,7 +59,18 @@ services:
         sync: false
 
       # --- Email ---
-      # PREFER RESEND. Render's free tier blocks outbound SMTP ports, so Gmail
+      # BREVO is the one that works for a demo with no domain: it verifies a
+      # single sender ADDRESS (a plain Gmail is fine) and will then deliver to
+      # anyone. Resend's shared sender only reaches the account owner, which is
+      # useless when other people are signing up. Free tier is 300/day.
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_FROM
+        sync: false      # the address you verified in Brevo
+      - key: BREVO_FROM_NAME
+        value: Harmony
+
+      # Resend: better once you own a domain. Render's free tier blocks outbound SMTP ports, so Gmail
       # cannot deliver from here however it is configured. Resend sends over
       # HTTPS, which is never blocked. Set RESEND_API_KEY and the SMTP_* values
       # below are ignored.

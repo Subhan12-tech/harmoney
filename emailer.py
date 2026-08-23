@@ -30,6 +30,14 @@ from email.message import EmailMessage
 # tier among them - block outbound SMTP ports entirely to prevent spam, so
 # Gmail SMTP cannot work there no matter how it is configured. HTTPS is never
 # blocked, so this is the transport that actually works on a free deployment.
+# Brevo verifies a single SENDER ADDRESS rather than a whole domain, so a plain
+# Gmail can send to anyone once confirmed. That is the difference that matters
+# without a domain: Resend's shared sender only reaches the account owner, which
+# is useless for a demo where other people sign up. Free tier is 300/day.
+BREVO_API_KEY = (os.getenv("BREVO_API_KEY") or "").strip()
+BREVO_FROM = (os.getenv("BREVO_FROM") or "").strip()      # the verified sender address
+BREVO_FROM_NAME = (os.getenv("BREVO_FROM_NAME") or "Harmony").strip()
+
 RESEND_API_KEY = (os.getenv("RESEND_API_KEY") or "").strip()
 
 # Resend will only send from a domain you have verified. Until you have one, its
@@ -75,15 +83,47 @@ def email_working() -> bool:
 
 
 def email_configured() -> bool:
-    return bool(RESEND_API_KEY) or bool(SMTP_HOST and SMTP_USER and SMTP_PASSWORD)
+    return (bool(BREVO_API_KEY and BREVO_FROM) or bool(RESEND_API_KEY)
+            or bool(SMTP_HOST and SMTP_USER and SMTP_PASSWORD))
 
 
 def transport() -> str:
+    if BREVO_API_KEY and BREVO_FROM:
+        return "brevo"
     if RESEND_API_KEY:
         return "resend"
     if SMTP_HOST and SMTP_USER and SMTP_PASSWORD:
         return "smtp"
     return "none"
+
+
+def _send_brevo(to: str, subject: str, text: str, html: str) -> tuple[bool, str]:
+    payload = json.dumps({
+        "sender": {"name": BREVO_FROM_NAME, "email": BREVO_FROM},
+        "to": [{"email": to}],
+        "subject": subject,
+        "textContent": text,
+        "htmlContent": html,
+    }).encode()
+    req = urllib.request.Request(
+        "https://api.brevo.com/v3/smtp/email", data=payload, method="POST",
+        headers={"api-key": BREVO_API_KEY, "Content-Type": "application/json",
+                 "Accept": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            return (200 <= r.status < 300), "ok"
+    except urllib.error.HTTPError as e:
+        body = e.read().decode(errors="replace")[:300]
+        if e.code == 401:
+            return False, "Brevo rejected BREVO_API_KEY."
+        # Brevo refuses a sender it has not confirmed. That is a one-click fix
+        # in their dashboard, so name it rather than passing the raw body along.
+        if e.code == 400 and "sender" in body.lower():
+            return False, (f"Brevo will not send from {BREVO_FROM}. Confirm that address under "
+                           "Senders, Domains & Dedicated IPs in the Brevo dashboard, then retry. " + body)
+        return False, f"Brevo HTTP {e.code}: {body}"
+    except Exception as e:
+        return False, f"{type(e).__name__}: {e}"
 
 
 def _send_resend(to: str, subject: str, text: str, html: str) -> tuple[bool, str]:
@@ -116,7 +156,9 @@ def config_problem() -> str | None:
     otherwise silent: verification is skipped when SMTP is unconfigured, so
     signup keeps working and nothing says the codes are not being sent.
     """
-    if RESEND_API_KEY:
+    if BREVO_API_KEY and not BREVO_FROM:
+        return "BREVO_API_KEY is set but BREVO_FROM is not - Brevo needs the verified sender address."
+    if (BREVO_API_KEY and BREVO_FROM) or RESEND_API_KEY:
         return None          # validated for real by verify_connection()
 
     missing = [n for n, v in (("SMTP_HOST", SMTP_HOST), ("SMTP_USER", SMTP_USER),
@@ -145,6 +187,23 @@ def verify_connection() -> tuple[bool, str]:
     if not email_configured():
         _EMAIL_HEALTHY = False
         return False, "not configured"
+
+    if BREVO_API_KEY and BREVO_FROM:
+        req = urllib.request.Request(
+            "https://api.brevo.com/v3/account",
+            headers={"api-key": BREVO_API_KEY, "Accept": "application/json"})
+        try:
+            with urllib.request.urlopen(req, timeout=15):
+                _EMAIL_HEALTHY = True
+                return True, "ok (brevo)"
+        except urllib.error.HTTPError as e:
+            _EMAIL_HEALTHY = e.code not in (401, 403)
+            if e.code in (401, 403):
+                return False, "Brevo rejected BREVO_API_KEY"
+            return True, "ok (brevo)"
+        except Exception as e:
+            _EMAIL_HEALTHY = False
+            return False, f"Brevo unreachable: {type(e).__name__}: {e}"
 
     if RESEND_API_KEY:
         # There is no send-nothing endpoint a SENDING-ONLY key can call. /domains
@@ -191,6 +250,15 @@ def verify_connection() -> tuple[bool, str]:
 def _send(to: str, subject: str, text: str, html: str) -> bool:
     """Returns True if the message was actually accepted by a provider."""
     global _EMAIL_HEALTHY, LAST_SEND_ERROR
+
+    if BREVO_API_KEY and BREVO_FROM:
+        ok, detail = _send_brevo(to, subject, text, html)
+        LAST_SEND_ERROR = None if ok else detail
+        if not ok:
+            print(f"Brevo send failed: {detail}")
+            if "401" in detail or "rejected" in detail.lower():
+                _EMAIL_HEALTHY = False
+        return ok
 
     if RESEND_API_KEY:
         ok, detail = _send_resend(to, subject, text, html)
