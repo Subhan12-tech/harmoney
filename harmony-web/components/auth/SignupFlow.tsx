@@ -118,6 +118,9 @@ export function SignupFlow() {
   const [submitting, setSubmitting] = useState(false);
   /** Shown only when the server has no SMTP configured (development). */
   const [devCode, setDevCode] = useState<string | null>(null);
+  /** False when the server could not deliver a code. The verify step is then
+   *  skipped entirely rather than demanding six digits that were never sent. */
+  const [codeSent, setCodeSent] = useState(true);
 
   const codeRefs = useRef<(HTMLInputElement | null)[]>([]);
   const score = passwordScore(password);
@@ -137,7 +140,7 @@ export function SignupFlow() {
       if (!EMAIL_RE.test(email.trim())) next.email = "Enter a valid work email address.";
       if (passwordScore(password) < 2) next.password = "Use at least 8 characters, with a mix of cases.";
     }
-    if (step.key === "verify" && code.join("").length < 6) {
+    if (step.key === "verify" && codeSent && code.join("").length < 6) {
       next.code = "Enter the six-digit code we emailed you.";
     }
     if (step.key === "organization") {
@@ -151,7 +154,7 @@ export function SignupFlow() {
 
     setErrors(next);
     return Object.keys(next).length === 0;
-  }, [step.key, name, email, password, code, company, website, invites]);
+  }, [step.key, name, email, password, code, company, website, invites, codeSent]);
 
   /**
    * The account is created at the END of the organization step, because the
@@ -168,7 +171,12 @@ export function SignupFlow() {
         const r = await sendVerificationCode(email.trim());
         setDevCode(r.dev_code ?? null);
         setResent(false);
-        go("verify");
+        const delivered = r.status === "sent";
+        setCodeSent(delivered);
+        // Nothing arrived, so there is nothing to type. Showing a code box the
+        // user cannot possibly satisfy is a dead end, not a security control -
+        // the server already knows not to require verification in this state.
+        go(delivered || r.dev_code ? "verify" : "organization");
       } catch (err) {
         // A taken address is reported here rather than three steps later.
         setErrors({ email: err instanceof ApiError ? err.message : "Could not send the verification code." });
@@ -179,6 +187,10 @@ export function SignupFlow() {
     }
 
     if (step.key === "verify") {
+      if (!codeSent && !devCode) {
+        go("organization");
+        return;
+      }
       setSubmitting(true);
       try {
         await checkVerificationCode(email.trim(), code.join(""));
@@ -401,7 +413,9 @@ export function SignupFlow() {
               blurb={
                 devCode
                   ? `Email is not configured on this server, so the code is shown here instead: ${devCode}`
-                  : `We sent a six-digit code to ${email || "your work email"}.`
+                  : codeSent
+                    ? `We sent a six-digit code to ${email || "your work email"}.`
+                    : "We could not send a code to that address, so this step is skipped."
               }
               onSubmit={onContinue}
             >
