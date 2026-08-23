@@ -224,8 +224,14 @@ def send_code(body: SendCodeIn):
         # Do NOT 503 here. Signup does not require verification when email is
         # not working, so failing this call would block the flow on a step that
         # is no longer load-bearing. Report it and let the user continue.
+        # Include the provider's own reason. It is the difference between "email
+        # is broken" and "Resend refused THIS recipient because the sender
+        # domain is unverified" - and without it that is invisible on a host
+        # whose logs you may not be reading.
+        reason = emailer.last_send_error()
         return {"status": "not_sent",
-                "detail": "Email is unavailable on this server, so verification is skipped. Continue.",
+                "detail": "Verification email could not be sent, so this step is skipped. Continue.",
+                **({"reason": reason} if reason else {}),
                 **({"dev_code": code} if APP_ENV != "production" else {})}
 
     return {"status": "sent", "detail": f"Code sent to {email}. It expires in {CODE_TTL_MINUTES} minutes."}

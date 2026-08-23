@@ -53,6 +53,15 @@ APP_NAME = "Harmony"
 # of a product whose verification email can never arrive.
 _EMAIL_HEALTHY: bool | None = None
 
+# Why the most recent send failed, for surfacing to the caller. Provider error
+# text only - never credentials. Without this the reason lives solely in the
+# server log, which is exactly where you cannot reach it on a hosted deploy.
+LAST_SEND_ERROR: str | None = None
+
+
+def last_send_error() -> str | None:
+    return LAST_SEND_ERROR
+
 
 def email_working() -> bool:
     """True only if a real SMTP login succeeded at startup.
@@ -182,8 +191,9 @@ def verify_connection() -> tuple[bool, str]:
 def _send(to: str, subject: str, text: str, html: str) -> bool:
     """Returns True if the message was actually accepted by a provider."""
     if RESEND_API_KEY:
-        global _EMAIL_HEALTHY
+        global _EMAIL_HEALTHY, LAST_SEND_ERROR
         ok, detail = _send_resend(to, subject, text, html)
+        LAST_SEND_ERROR = None if ok else detail
         if not ok:
             print(f"Resend send failed: {detail}")
             # A real send is the only authoritative test. A rejected key means
@@ -226,7 +236,9 @@ def _send(to: str, subject: str, text: str, html: str) -> bool:
               "not your account password, and make sure 2-Step Verification is on.")
         return False
     except Exception as e:
-        print(f"SMTP send failed: {type(e).__name__}: {e}")
+        global LAST_SEND_ERROR
+        LAST_SEND_ERROR = f"{type(e).__name__}: {e}"
+        print(f"SMTP send failed: {LAST_SEND_ERROR}")
         return False
 
 
