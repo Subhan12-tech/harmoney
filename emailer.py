@@ -19,6 +19,7 @@ import os
 import re
 import smtplib
 import ssl
+import base64
 import urllib.error
 import urllib.request
 from email.message import EmailMessage
@@ -30,6 +31,14 @@ from email.message import EmailMessage
 # tier among them - block outbound SMTP ports entirely to prevent spam, so
 # Gmail SMTP cannot work there no matter how it is configured. HTTPS is never
 # blocked, so this is the transport that actually works on a free deployment.
+# Mailjet: 6,000/month free, verifies a single SENDER ADDRESS, and the free plan
+# is offered plainly at signup rather than buried behind an upsell. Basic-auth
+# HTTPS API, so a host that blocks SMTP ports does not matter.
+MAILJET_API_KEY = (os.getenv("MAILJET_API_KEY") or "").strip()
+MAILJET_SECRET = (os.getenv("MAILJET_SECRET") or "").strip()
+MAILJET_FROM = (os.getenv("MAILJET_FROM") or "").strip()
+MAILJET_FROM_NAME = (os.getenv("MAILJET_FROM_NAME") or "Harmony").strip()
+
 # Brevo verifies a single SENDER ADDRESS rather than a whole domain, so a plain
 # Gmail can send to anyone once confirmed. That is the difference that matters
 # without a domain: Resend's shared sender only reaches the account owner, which
@@ -82,12 +91,18 @@ def email_working() -> bool:
     return _EMAIL_HEALTHY
 
 
+def _mailjet_ready() -> bool:
+    return bool(MAILJET_API_KEY and MAILJET_SECRET and MAILJET_FROM)
+
+
 def email_configured() -> bool:
-    return (bool(BREVO_API_KEY and BREVO_FROM) or bool(RESEND_API_KEY)
+    return (_mailjet_ready() or bool(BREVO_API_KEY and BREVO_FROM) or bool(RESEND_API_KEY)
             or bool(SMTP_HOST and SMTP_USER and SMTP_PASSWORD))
 
 
 def transport() -> str:
+    if _mailjet_ready():
+        return "mailjet"
     if BREVO_API_KEY and BREVO_FROM:
         return "brevo"
     if RESEND_API_KEY:
@@ -95,6 +110,38 @@ def transport() -> str:
     if SMTP_HOST and SMTP_USER and SMTP_PASSWORD:
         return "smtp"
     return "none"
+
+
+def _mailjet_auth() -> str:
+    raw = f"{MAILJET_API_KEY}:{MAILJET_SECRET}".encode()
+    return "Basic " + base64.b64encode(raw).decode()
+
+
+def _send_mailjet(to: str, subject: str, text: str, html: str) -> tuple[bool, str]:
+    payload = json.dumps({"Messages": [{
+        "From": {"Email": MAILJET_FROM, "Name": MAILJET_FROM_NAME},
+        "To": [{"Email": to}],
+        "Subject": subject,
+        "TextPart": text,
+        "HTMLPart": html,
+    }]}).encode()
+    req = urllib.request.Request(
+        "https://api.mailjet.com/v3.1/send", data=payload, method="POST",
+        headers={"Authorization": _mailjet_auth(), "Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            return (200 <= r.status < 300), "ok"
+    except urllib.error.HTTPError as e:
+        body = e.read().decode(errors="replace")[:300]
+        if e.code in (401, 403):
+            return False, "Mailjet rejected MAILJET_API_KEY / MAILJET_SECRET."
+        # Mailjet refuses an unvalidated sender. One click in their dashboard.
+        if "sender" in body.lower() or e.code == 400:
+            return False, (f"Mailjet will not send from {MAILJET_FROM}. Add and validate that "
+                           "address under Account Settings > Sender domains & addresses. " + body)
+        return False, f"Mailjet HTTP {e.code}: {body}"
+    except Exception as e:
+        return False, f"{type(e).__name__}: {e}"
 
 
 def _send_brevo(to: str, subject: str, text: str, html: str) -> tuple[bool, str]:
@@ -156,6 +203,13 @@ def config_problem() -> str | None:
     otherwise silent: verification is skipped when SMTP is unconfigured, so
     signup keeps working and nothing says the codes are not being sent.
     """
+    if (MAILJET_API_KEY or MAILJET_SECRET or MAILJET_FROM) and not _mailjet_ready():
+        missing = [n for n, v in (("MAILJET_API_KEY", MAILJET_API_KEY),
+                                  ("MAILJET_SECRET", MAILJET_SECRET),
+                                  ("MAILJET_FROM", MAILJET_FROM)) if not v]
+        return "Mailjet is partly configured - missing " + ", ".join(missing)
+    if _mailjet_ready():
+        return None
     if BREVO_API_KEY and not BREVO_FROM:
         return "BREVO_API_KEY is set but BREVO_FROM is not - Brevo needs the verified sender address."
     if (BREVO_API_KEY and BREVO_FROM) or RESEND_API_KEY:
@@ -187,6 +241,23 @@ def verify_connection() -> tuple[bool, str]:
     if not email_configured():
         _EMAIL_HEALTHY = False
         return False, "not configured"
+
+    if _mailjet_ready():
+        req = urllib.request.Request(
+            "https://api.mailjet.com/v3/REST/sender",
+            headers={"Authorization": _mailjet_auth()})
+        try:
+            with urllib.request.urlopen(req, timeout=15):
+                _EMAIL_HEALTHY = True
+                return True, "ok (mailjet)"
+        except urllib.error.HTTPError as e:
+            _EMAIL_HEALTHY = e.code not in (401, 403)
+            if e.code in (401, 403):
+                return False, "Mailjet rejected MAILJET_API_KEY / MAILJET_SECRET"
+            return True, "ok (mailjet)"
+        except Exception as e:
+            _EMAIL_HEALTHY = False
+            return False, f"Mailjet unreachable: {type(e).__name__}: {e}"
 
     if BREVO_API_KEY and BREVO_FROM:
         req = urllib.request.Request(
@@ -250,6 +321,15 @@ def verify_connection() -> tuple[bool, str]:
 def _send(to: str, subject: str, text: str, html: str) -> bool:
     """Returns True if the message was actually accepted by a provider."""
     global _EMAIL_HEALTHY, LAST_SEND_ERROR
+
+    if _mailjet_ready():
+        ok, detail = _send_mailjet(to, subject, text, html)
+        LAST_SEND_ERROR = None if ok else detail
+        if not ok:
+            print(f"Mailjet send failed: {detail}")
+            if "rejected" in detail.lower():
+                _EMAIL_HEALTHY = False
+        return ok
 
     if BREVO_API_KEY and BREVO_FROM:
         ok, detail = _send_brevo(to, subject, text, html)
