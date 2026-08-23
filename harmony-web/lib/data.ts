@@ -671,20 +671,6 @@ export const SETTINGS_TAB_KEYS: readonly string[] = SETTINGS_TABS.map((t) => t.k
    Marketing
    ============================================================ */
 
-export const BRANDS: { text: string; style: React.CSSProperties }[] = [
-  { text: "Meridian", style: { fontFamily: "Georgia, serif", fontStyle: "italic" } },
-  { text: "ARDEN", style: { fontWeight: 700, letterSpacing: "0.08em" } },
-  { text: "Halcyon", style: { fontFamily: "var(--font-instrument-serif), serif", fontSize: 20 } },
-  { text: "◆ Vantage", style: { fontWeight: 600 } },
-  { text: "Northwind", style: { fontFamily: "Georgia, serif" } },
-  { text: "CLARO", style: { fontWeight: 700 } },
-  { text: "▲ apex", style: {} },
-  { text: "Ferris & Co.", style: { fontFamily: "var(--font-instrument-serif), serif", fontSize: 20 } },
-  { text: "◐ orbital", style: {} },
-  { text: "Blackstone Row", style: { fontFamily: "Georgia, serif" } },
-  { text: "STRATA", style: { fontWeight: 700 } },
-  { text: "✱ signal", style: {} },
-];
 
 export const TESTIMONIALS = [
   {

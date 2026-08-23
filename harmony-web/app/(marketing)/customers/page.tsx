@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { LogoStrip } from "@/components/marketing/LogoStrip";
 import { TestimonialCard } from "@/components/marketing/Testimonial";
 import { ClosingCTA } from "@/components/marketing/ClosingCTA";
 import { TESTIMONIALS } from "@/lib/data";
@@ -49,7 +48,6 @@ export default function CustomersPage() {
       </section>
 
       {/* ---- Logo wall ---- */}
-      <LogoStrip kicker="Trusted by the world’s disclosure teams" large />
 
       {/* ---- Stats ---- */}
       <section className="mx-auto max-w-[1000px]" style={{ padding: "20px 40px 80px" }}>

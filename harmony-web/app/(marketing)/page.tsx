@@ -1,5 +1,4 @@
 import { HeroSection } from "@/components/marketing/HeroSection";
-import { LogoStrip } from "@/components/marketing/LogoStrip";
 import { FlaggedDraft } from "@/components/marketing/FlaggedDraft";
 import { ReviewerExperience } from "@/components/marketing/ReviewerExperience";
 import { FeatureGrid } from "@/components/marketing/FeatureGrid";
@@ -11,7 +10,6 @@ export default function LandingPage() {
   return (
     <>
       <HeroSection />
-      <LogoStrip />
       <FlaggedDraft />
       <div id="platform" />
       <ReviewerExperience />
