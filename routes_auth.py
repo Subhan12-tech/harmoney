@@ -163,6 +163,16 @@ def me(user: User = Depends(current_user), org_id: str = Depends(org_id_unchecke
 # The code is issued BEFORE the account exists, so signup can require a verified
 # address. The old flow accepted any six digits, which verified nothing.
 
+# Demo mode. With no email provider configured, verification is skipped entirely
+# - which works, but the six-digit step then never appears and the flow looks
+# unfinished when you are showing it to someone. This shows the code on screen
+# instead, so the step is real and demonstrable without any provider account.
+#
+# It is opt-in and clearly labelled in the UI, because it does weaken
+# verification: anyone who can reach the signup form can read the code. Fine for
+# a demo with no real customers; never for a deployment that has them.
+DEMO_SHOW_CODES = (os.getenv("HARMONY_DEMO_CODES") or "").strip().lower() == "true"
+
 CODE_TTL_MINUTES = 15
 MAX_ATTEMPTS = 5
 RESEND_COOLDOWN_SECONDS = 45
@@ -229,10 +239,13 @@ def send_code(body: SendCodeIn):
         # domain is unverified" - and without it that is invisible on a host
         # whose logs you may not be reading.
         reason = emailer.last_send_error()
+        if DEMO_SHOW_CODES or APP_ENV != "production":
+            return {"status": "demo",
+                    "detail": "Email is not configured, so the code is shown here instead.",
+                    "dev_code": code}
         return {"status": "not_sent",
                 "detail": "Verification email could not be sent, so this step is skipped. Continue.",
-                **({"reason": reason} if reason else {}),
-                **({"dev_code": code} if APP_ENV != "production" else {})}
+                **({"reason": reason} if reason else {})}
 
     return {"status": "sent", "detail": f"Code sent to {email}. It expires in {CODE_TTL_MINUTES} minutes."}
 
@@ -257,8 +270,10 @@ def check_code(body: CheckCodeIn):
         if row.attempts >= MAX_ATTEMPTS:
             raise HTTPException(429, "Too many incorrect attempts. Request a new code.")
 
-        if not emailer.email_working():
-            return {"status": "skipped", "detail": "Email verification is unavailable on this server."}
+        # A code EXISTS, so check it - whatever the transport. Skipping here
+        # meant a wrong code was accepted in demo mode, which made the step
+        # theatre rather than a demonstration. "Skipped" belongs only above,
+        # where no code was ever issued.
         if _hash_code(code) != row.code_hash:
             row.attempts += 1
             s.add(row); s.commit()

@@ -58,6 +58,12 @@ services:
       - key: CORS_ORIGINS
         sync: false
 
+      # Demo mode: show the verification code on screen instead of emailing it.
+      # No provider account needed. Weakens verification - anyone who can reach
+      # the signup form can read the code - so use it only while demoing.
+      - key: HARMONY_DEMO_CODES
+        value: "true"
+
       # --- Email ---
       # BREVO is the one that works for a demo with no domain: it verifies a
       # single sender ADDRESS (a plain Gmail is fine) and will then deliver to

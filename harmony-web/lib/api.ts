@@ -404,7 +404,8 @@ export function adminReactivate(orgId: string): Promise<AdminOrg> {
    ============================================================ */
 
 export interface SendCodeResult {
-  status: "sent" | "not_sent";
+  /** "demo" = a real code was issued but shown on screen rather than emailed. */
+  status: "sent" | "not_sent" | "demo";
   detail: string;
   /** Development only, when SMTP is not configured. Never present in production. */
   dev_code?: string;

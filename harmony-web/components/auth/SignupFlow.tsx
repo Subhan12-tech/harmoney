@@ -171,7 +171,8 @@ export function SignupFlow() {
         const r = await sendVerificationCode(email.trim());
         setDevCode(r.dev_code ?? null);
         setResent(false);
-        const delivered = r.status === "sent";
+        // "demo" means a real code exists, it is just shown rather than emailed.
+        const delivered = r.status === "sent" || r.status === "demo";
         setCodeSent(delivered);
         // Nothing arrived, so there is nothing to type. Showing a code box the
         // user cannot possibly satisfy is a dead end, not a security control -
@@ -412,7 +413,7 @@ export function SignupFlow() {
               title="Verify your email"
               blurb={
                 devCode
-                  ? `Email is not configured on this server, so the code is shown here instead: ${devCode}`
+                  ? `Demo mode — email is not configured, so your code is ${devCode}`
                   : codeSent
                     ? `We sent a six-digit code to ${email || "your work email"}.`
                     : "We could not send a code to that address, so this step is skipped."
