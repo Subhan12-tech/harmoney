@@ -90,7 +90,7 @@ export default function AdminPage() {
   if (allowed === false) {
     return (
       <div className="app-card" style={{ padding: 24, maxWidth: 520 }}>
-        <h1 className="font-heading" style={{ fontSize: 20, fontWeight: 700, margin: "0 0 8px" }}>
+        <h1 className="font-heading" style={{ fontSize: 18, fontWeight: 600, margin: "0 0 8px" }}>
           Platform admin
         </h1>
         <p style={{ color: "var(--muted)", fontSize: 13.5, margin: 0, lineHeight: 1.6 }}>
@@ -105,7 +105,7 @@ export default function AdminPage() {
     <>
       <div className="flex items-center justify-between gap-4" style={{ marginBottom: 16 }}>
         <div>
-          <h1 className="font-heading" style={{ fontSize: 21, fontWeight: 700, margin: 0 }}>
+          <h1 className="font-heading" style={{ fontSize: 19, fontWeight: 600, margin: 0 }}>
             Platform admin
           </h1>
           <p style={{ color: "var(--muted)", fontSize: 12.5, margin: "4px 0 0" }}>
@@ -135,12 +135,13 @@ export default function AdminPage() {
           {pending.length > 0 && (
             <span
               style={{
-                background: "color-mix(in srgb, var(--warn) 20%, transparent)",
+                background: "color-mix(in srgb, var(--warn) 12%, transparent)",
                 color: "var(--warn)",
-                borderRadius: 999,
-                padding: "2px 9px",
+                border: "1px solid color-mix(in srgb, var(--warn) 26%, transparent)",
+                borderRadius: 6,
+                padding: "1px 7px",
                 fontSize: 11.5,
-                fontWeight: 700,
+                fontWeight: 500,
               }}
             >
               {pending.length}
@@ -259,7 +260,7 @@ function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div className="app-card" style={{ padding: 14 }}>
       <div style={{ color: "var(--muted)", fontSize: 11.5 }}>{label}</div>
-      <div className="font-heading" style={{ fontSize: 22, fontWeight: 700, marginTop: 2 }}>
+      <div className="font-heading" style={{ fontSize: 24, fontWeight: 550, marginTop: 2 }}>
         {value}
       </div>
     </div>
@@ -292,7 +293,7 @@ function StatusChip({ status }: { status: string }) {
 }
 
 const primaryButton: React.CSSProperties = {
-  background: "linear-gradient(135deg, var(--accent), var(--accent-2))",
+  background: "var(--accent)",
   color: "var(--on-accent)",
   border: "none",
   borderRadius: 8,

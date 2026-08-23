@@ -175,7 +175,7 @@ export default function LoginPage() {
               className="font-heading"
               style={{
                 width: "100%",
-                background: "linear-gradient(135deg, var(--accent), var(--accent-2))",
+                background: "var(--accent)",
                 color: "var(--on-accent)",
                 border: "none",
                 borderRadius: 9,
@@ -184,7 +184,6 @@ export default function LoginPage() {
                 fontSize: 14.5,
                 cursor: locked || submitting ? "not-allowed" : "pointer",
                 opacity: locked || submitting ? 0.6 : 1,
-                boxShadow: "0 8px 24px color-mix(in srgb, var(--accent) 30%, transparent)",
               }}
             >
               {submitting ? "Signing in…" : "Sign in"}

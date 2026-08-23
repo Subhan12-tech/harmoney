@@ -74,7 +74,7 @@ export default function DashboardPage() {
         className="flex flex-wrap items-center gap-5"
         style={{
           background:
-            "linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, transparent), transparent), var(--surface)",
+            "var(--surface)",
           border: "1px solid var(--border)",
           borderRadius: 14,
           padding: 20,

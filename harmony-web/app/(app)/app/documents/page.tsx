@@ -161,7 +161,6 @@ export default function DocumentsPage() {
                     ...primaryButtonStyle,
                     padding: "8px 14px",
                     fontSize: 13,
-                    boxShadow: "0 6px 18px color-mix(in srgb, var(--accent) 25%, transparent)",
                   })}
                   onClick={() => draftInput.current?.click()}
                 >

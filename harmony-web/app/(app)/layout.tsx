@@ -20,12 +20,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <AuthGuard>
       <RoleProvider>
       <ToastProvider>
-        <div className="app-skin grid min-h-screen grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)]">
+        <div className="app-skin grid min-h-screen grid-cols-1 lg:grid-cols-[228px_minmax(0,1fr)]">
           <Sidebar />
           <div className="flex min-w-0 flex-col">
             <Header />
             <MobileNav />
-            <main className="p-4 lg:p-[26px]">{children}</main>
+            <main className="p-4 lg:px-9 lg:py-8">
+              <div style={{ maxWidth: 1180, margin: "0 auto" }}>{children}</div>
+            </main>
           </div>
         </div>
       </ToastProvider>

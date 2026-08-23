@@ -310,7 +310,6 @@ function ReviewPageInner() {
                   padding: "10px 20px",
                   fontSize: 14,
                   fontWeight: 700,
-                  boxShadow: "0 6px 18px color-mix(in srgb, var(--accent) 30%, transparent)",
                 }}
               >
                 Approve &amp; publish

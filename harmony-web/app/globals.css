@@ -4,27 +4,53 @@
 
 /* ============================================================
    Design tokens
-   Two skins live side by side and must NOT cross-contaminate.
-   - Marketing skin: #000 ground + Instrument Serif display type.
-     Its values are literal hex, applied per-component.
-   - App skin: #0a0d12 ground + Manrope/Inter. Its values are the
-     custom properties below, consumed by the `app-*` Tailwind
-     colors and by `color-mix()` tints throughout the app UI.
+   ------------------------------------------------------------
+   Near-monochrome by design. The previous palette leaned on a
+   saturated teal, gradients and glow shadows; the result read as
+   decorated rather than considered.
+
+   The rules this palette follows:
+   - one hue, used sparingly, for what the user must act on
+   - hierarchy from WEIGHT and SPACE, not from colour
+   - borders barely visible: they separate, they do not draw
+   - no gradients, no glows, no coloured shadows anywhere
+   - semantic colour (warn/danger) desaturated so a real warning
+     still outranks the interface itself
+
+   Everything else in the app derives from these via color-mix(),
+   so retuning here retints the whole product.
    ============================================================ */
 :root {
-  --bg: #0a0d12;
-  --bg-elev: #10141b;
-  --surface: rgba(255, 255, 255, 0.035);
-  --surface-2: rgba(255, 255, 255, 0.07);
-  --border: rgba(255, 255, 255, 0.1);
-  --text: #eef1f4;
-  --muted: rgba(238, 241, 244, 0.6);
-  --accent: oklch(0.78 0.12 189);
-  --accent-2: oklch(0.72 0.12 233);
-  --warn: oklch(0.78 0.15 70);
-  --danger: oklch(0.68 0.19 25);
-  /* text that sits on top of a filled --accent surface */
-  --on-accent: #04211e;
+  /* Ground: near-black, very slightly warm, so white text is not clinical. */
+  --bg: #08090a;
+  --bg-elev: #0e0f11;
+
+  /* Surfaces are light films over the ground, never separate colours. */
+  --surface: rgba(255, 255, 255, 0.024);
+  --surface-2: rgba(255, 255, 255, 0.052);
+
+  /* Two border weights: hairline for dividers, strong for focus. */
+  --border: rgba(255, 255, 255, 0.075);
+  --border-strong: rgba(255, 255, 255, 0.14);
+
+  --text: #f2f2f3;
+  --muted: rgba(242, 242, 243, 0.52);
+  --faint: rgba(242, 242, 243, 0.34);
+
+  /* The single accent. Used for the primary action and almost nothing else. */
+  --accent: #ffffff;
+  --on-accent: #08090a;
+
+  /* Informational hue, for links and non-action emphasis. */
+  --accent-2: #8f9aa8;
+
+  /* Semantic. Deliberately muted: a warning should read as serious,
+     not as a decoration competing with the content. */
+  --warn: #d6a25d;
+  --danger: #e0685f;
+
+  --radius: 8px;
+  --radius-lg: 12px;
 }
 
 * {
@@ -54,9 +80,9 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 [tabindex]:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 1.5px solid rgba(255, 255, 255, 0.55);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: 5px;
 }
 
 /* The marketing skin has no teal in its palette — ring in its own blue. */
@@ -88,7 +114,20 @@ textarea:focus-visible,
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-inter), system-ui, sans-serif;
-  font-size: 14px;
+  font-size: 13.5px;
+  /* Tabular figures everywhere: this product is mostly numbers, and
+     proportional digits make a column of them look ragged. */
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.006em;
+}
+
+/* Headings carry the weight the colour used to. Tight tracking at large
+   sizes is most of what separates a considered interface from a default one. */
+.app-skin h1,
+.app-skin h2,
+.app-skin h3 {
+  letter-spacing: -0.021em;
+  font-weight: 600;
 }
 
 /* Native selects, restyled to match the dark inputs (chevron is inlined
@@ -96,7 +135,7 @@ textarea:focus-visible,
 .h-select {
   -webkit-appearance: none;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%237fd9cf' stroke-width='2'%3E%3Cpolyline points='5 8 12 15 19 8'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23888e96' stroke-width='2'%3E%3Cpolyline points='5 8 12 15 19 8'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 10px center;
   padding-right: 30px;
@@ -107,50 +146,72 @@ textarea:focus-visible,
 }
 
 /* Kicker: the 11px uppercase label that titles nearly every app card. */
+/* Section label. No longer shouting in uppercase — same job, less noise. */
 .kicker {
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 550;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  color: var(--text);
 }
 
 .app-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
 }
 
 .app-input {
   width: 100%;
-  background: var(--surface);
+  background: var(--bg-elev);
   border: 1px solid var(--border);
-  border-radius: 9px;
-  padding: 11px 13px;
+  border-radius: var(--radius);
+  padding: 9px 12px;
   color: var(--text);
-  font-size: 14px;
+  font-size: 13.5px;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.app-input:hover {
+  border-color: var(--border-strong);
+}
+.app-input:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.28);
 }
 .app-input::placeholder {
-  color: rgba(238, 241, 244, 0.35);
+  color: var(--faint);
 }
 
 .app-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13.5px;
+  font-size: 13px;
 }
 .app-table th {
   text-align: left;
-  padding: 10px 8px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--border);
-  color: var(--muted);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  color: var(--faint);
+  font-size: 12px;
+  text-transform: none;
+  letter-spacing: -0.005em;
   font-weight: 500;
 }
+/* Rows breathe. Density was the other half of why the old table felt cramped. */
 .app-table td {
-  padding: 10px 8px;
+  padding: 13px 12px;
   border-bottom: 1px solid var(--border);
+  color: var(--muted);
+}
+.app-table tbody tr {
+  transition: background 110ms ease;
+}
+.app-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.018);
+}
+/* The last row's divider doubles the card border underneath it. */
+.app-table tbody tr:last-child td {
+  border-bottom: none;
 }
 
 /* Modal/popover entrance — the prototype had none; the handoff notes ask

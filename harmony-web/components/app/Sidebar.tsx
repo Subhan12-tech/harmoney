@@ -79,11 +79,11 @@ export function Sidebar() {
   return (
     <aside
       className="hidden flex-col lg:flex"
-      style={{ borderRight: "1px solid var(--border)", padding: "20px 14px", background: "var(--bg-elev)" }}
+      style={{ borderRight: "1px solid var(--border)", padding: "18px 12px", background: "var(--bg)" }}
     >
-      <Link href="/app" className="flex items-center gap-2.5" style={{ padding: "0 6px 22px" }}>
-        <Logo size={22} glow id="logo-sidebar" />
-        <span className="font-heading" style={{ fontWeight: 700, fontSize: 16, color: "var(--text)" }}>
+      <Link href="/app" className="flex items-center gap-2" style={{ padding: "2px 8px 26px" }}>
+        <Logo size={19} id="logo-sidebar" />
+        <span style={{ fontWeight: 550, fontSize: 14.5, letterSpacing: "-0.015em", color: "var(--text)" }}>
           Harmony
         </span>
       </Link>
@@ -93,12 +93,11 @@ export function Sidebar() {
           <div key={group.title}>
             <div
               style={{
-                fontSize: 10,
-                letterSpacing: ".1em",
-                textTransform: "uppercase",
-                color: "rgba(238,241,244,.35)",
+                fontSize: 11.5,
+                letterSpacing: "-0.004em",
+                color: "var(--faint)",
                 padding: "0 8px",
-                margin: group.title === "Workspace" ? "10px 0 6px" : "18px 0 6px",
+                margin: group.title === "Workspace" ? "2px 0 6px" : "20px 0 6px",
               }}
             >
               {group.title}
@@ -115,13 +114,14 @@ export function Sidebar() {
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: 10,
-                    padding: "9px 10px",
-                    marginBottom: 2,
-                    borderRadius: 8,
-                    fontSize: 13.5,
-                    color: active ? "var(--text)" : "rgba(238,241,244,.65)",
-                    background: active ? "color-mix(in srgb, var(--accent) 14%, transparent)" : "transparent",
+                    gap: 9,
+                    padding: "7px 9px",
+                    marginBottom: 1,
+                    borderRadius: 7,
+                    fontSize: 13,
+                    fontWeight: active ? 500 : 400,
+                    color: active ? "var(--text)" : "var(--muted)",
+                    background: active ? "var(--surface-2)" : "transparent",
                   }}
                 >
                   <Icon size={16} />
@@ -135,11 +135,10 @@ export function Sidebar() {
           <div key="Platform">
             <div
               style={{
-                fontSize: 10,
-                letterSpacing: ".1em",
-                textTransform: "uppercase",
-                color: "var(--muted)",
-                padding: "16px 8px 6px",
+                fontSize: 11.5,
+                letterSpacing: "-0.004em",
+                color: "var(--faint)",
+                padding: "20px 8px 6px",
               }}
             >
               Platform
@@ -148,23 +147,25 @@ export function Sidebar() {
               href="/app/admin"
               className="flex items-center justify-between gap-2.5"
               style={{
-                borderRadius: 9,
-                padding: "9px 10px",
-                fontSize: 13.5,
+                borderRadius: 7,
+                padding: "7px 9px",
+                fontSize: 13,
+                fontWeight: pathname.startsWith("/app/admin") ? 500 : 400,
                 color: pathname.startsWith("/app/admin") ? "var(--text)" : "var(--muted)",
-                background: pathname.startsWith("/app/admin") ? "var(--surface-2, rgba(255,255,255,.07))" : "transparent",
+                background: pathname.startsWith("/app/admin") ? "var(--surface-2)" : "transparent",
               }}
             >
               <span>Approvals</span>
               {pendingCount ? (
                 <span
                   style={{
-                    background: "color-mix(in srgb, var(--warn) 22%, transparent)",
+                    background: "color-mix(in srgb, var(--warn) 12%, transparent)",
                     color: "var(--warn)",
-                    borderRadius: 999,
-                    padding: "1px 8px",
+                    border: "1px solid color-mix(in srgb, var(--warn) 26%, transparent)",
+                    borderRadius: 6,
+                    padding: "0 6px",
                     fontSize: 11,
-                    fontWeight: 700,
+                    fontWeight: 500,
                   }}
                 >
                   {pendingCount}

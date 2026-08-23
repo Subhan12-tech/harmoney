@@ -94,7 +94,7 @@ export function ReviewPanel({
         aria-label="AI workflow"
         style={{
           background:
-            "linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, transparent), color-mix(in srgb, var(--accent-2) 12%, transparent)), var(--bg-elev)",
+            "var(--bg-elev)",
           border: "1px solid var(--border)",
           borderRadius: 14,
           padding: 16,

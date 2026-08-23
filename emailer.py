@@ -190,8 +190,9 @@ def verify_connection() -> tuple[bool, str]:
 
 def _send(to: str, subject: str, text: str, html: str) -> bool:
     """Returns True if the message was actually accepted by a provider."""
+    global _EMAIL_HEALTHY, LAST_SEND_ERROR
+
     if RESEND_API_KEY:
-        global _EMAIL_HEALTHY, LAST_SEND_ERROR
         ok, detail = _send_resend(to, subject, text, html)
         LAST_SEND_ERROR = None if ok else detail
         if not ok:
@@ -236,7 +237,6 @@ def _send(to: str, subject: str, text: str, html: str) -> bool:
               "not your account password, and make sure 2-Step Verification is on.")
         return False
     except Exception as e:
-        global LAST_SEND_ERROR
         LAST_SEND_ERROR = f"{type(e).__name__}: {e}"
         print(f"SMTP send failed: {LAST_SEND_ERROR}")
         return False

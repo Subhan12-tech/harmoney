@@ -66,7 +66,7 @@ export function UploadZone({
         background: dragOver
           ? mix(token, 12, "var(--bg-elev)")
           : isDraft
-            ? `linear-gradient(135deg, ${mix(token, 6)}, transparent), var(--surface)`
+            ? "var(--surface)"
             : "var(--surface)",
         border: `1.5px dashed ${dragOver ? mix(token, 70) : mix(token, isDraft ? 45 : 40, "var(--border)")}`,
         borderRadius: 14,

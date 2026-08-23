@@ -131,7 +131,6 @@ export function Header() {
                   height: 6,
                   background: "var(--accent)",
                   borderRadius: "50%",
-                  boxShadow: "0 0 6px var(--accent)",
                 }}
               />
             </button>
@@ -188,7 +187,7 @@ export function Header() {
                 width: 32,
                 height: 32,
                 borderRadius: "50%",
-                background: "linear-gradient(135deg, var(--accent), var(--accent-2))",
+                background: "var(--surface-2)",
                 color: "var(--on-accent)",
                 fontSize: 12,
                 fontWeight: 700,
