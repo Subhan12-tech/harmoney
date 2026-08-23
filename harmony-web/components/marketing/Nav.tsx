@@ -4,7 +4,6 @@ import { Logo } from "@/components/Logo";
 const LINKS: { label: string; href: string }[] = [
   { label: "Platform", href: "/" },
   { label: "Docs", href: "/#platform" },
-  { label: "Customers", href: "/customers" },
   { label: "Pricing", href: "/pricing" },
   { label: "Changelog", href: "/#platform" },
 ];

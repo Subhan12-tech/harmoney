@@ -672,29 +672,6 @@ export const SETTINGS_TAB_KEYS: readonly string[] = SETTINGS_TABS.map((t) => t.k
    ============================================================ */
 
 
-export const TESTIMONIALS = [
-  {
-    quote:
-      "We cut disclosure review from two weeks to four days, and caught a guidance mismatch that would have made the front page.",
-    name: "Elena Costa",
-    title: "VP Investor Relations, Meridian",
-    initials: "EC",
-  },
-  {
-    quote:
-      "Every finding arrives with the prior filing attached. My team stopped arguing about whether something was inconsistent and started deciding what to do about it.",
-    name: "Daniel Whitfield",
-    title: "Deputy General Counsel, Arden",
-    initials: "DW",
-  },
-  {
-    quote:
-      "The approval trail is what sold our audit committee. Nothing publishes without a named human on the record.",
-    name: "Sofia Marchetti",
-    title: "Head of Corporate Communications, Halcyon",
-    initials: "SM",
-  },
-];
 
 export const PRICING_FAQ = [
   {

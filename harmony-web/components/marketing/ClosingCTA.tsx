@@ -2,7 +2,7 @@ import Link from "next/link";
 
 /**
  * The closing CTA. Defaults reproduce the landing page exactly; `/pricing` and
- * `/customers` pass their own headline through rather than forking the block.
+ * Callers pass their own headline through rather than forking the block.
  */
 export function ClosingCTA({
   line1 = "Disclosure, reimagined.",
