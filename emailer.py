@@ -33,6 +33,53 @@ def email_configured() -> bool:
     return bool(SMTP_HOST and SMTP_USER and SMTP_PASSWORD)
 
 
+def config_problem() -> str | None:
+    """Why email will not work, in one sentence, or None if it looks fine.
+
+    Checked at startup and surfaced by /healthz, because the failure mode is
+    otherwise silent: verification is skipped when SMTP is unconfigured, so
+    signup keeps working and nothing says the codes are not being sent.
+    """
+    missing = [n for n, v in (("SMTP_HOST", SMTP_HOST), ("SMTP_USER", SMTP_USER),
+                              ("SMTP_PASSWORD", SMTP_PASSWORD)) if not v]
+    if missing:
+        return f"not configured - missing {', '.join(missing)}"
+
+    # Gmail rejects a normal account password over SMTP. App Passwords are 16
+    # characters, usually shown in four groups of four.
+    if "gmail" in SMTP_HOST.lower():
+        pw = SMTP_PASSWORD.replace(" ", "")
+        if len(pw) != 16:
+            return ("SMTP_PASSWORD does not look like a Google App Password (16 characters). "
+                    "Gmail rejects normal account passwords - create one at "
+                    "myaccount.google.com/apppasswords")
+    if SMTP_PORT not in (25, 465, 587, 2525):
+        return f"SMTP_PORT {SMTP_PORT} is unusual; Gmail uses 587 (STARTTLS) or 465 (SSL)"
+    return None
+
+
+def verify_connection() -> tuple[bool, str]:
+    """Actually log in to the SMTP server. Used at startup so a bad password is
+    reported once, at boot, instead of silently on every signup."""
+    if not email_configured():
+        return False, "not configured"
+    try:
+        if SMTP_PORT == 465:
+            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=15,
+                                  context=ssl.create_default_context()) as s:
+                s.login(SMTP_USER, SMTP_PASSWORD)
+        else:
+            with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as s:
+                s.starttls(context=ssl.create_default_context())
+                s.login(SMTP_USER, SMTP_PASSWORD)
+        return True, "ok"
+    except smtplib.SMTPAuthenticationError:
+        return False, ("authentication rejected - for Gmail use an App Password "
+                       "(myaccount.google.com/apppasswords), not the account password")
+    except Exception as e:
+        return False, f"{type(e).__name__}: {e}"
+
+
 def _send(to: str, subject: str, text: str, html: str) -> bool:
     """Returns True if the message was actually handed to an SMTP server."""
     if not email_configured():

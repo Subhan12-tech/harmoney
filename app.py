@@ -47,6 +47,21 @@ app.add_middleware(
 )
 
 init_db()
+
+# --- Email configuration, checked once at startup ---
+# Verification is skipped when SMTP is unconfigured, so a wrong setting means
+# signup keeps working while no code is ever delivered. Say so loudly here
+# rather than letting it be discovered by a customer who never got their code.
+import emailer as _emailer
+_EMAIL_PROBLEM = _emailer.config_problem()
+if _EMAIL_PROBLEM:
+    print(f"EMAIL: {_EMAIL_PROBLEM}")
+    print("EMAIL: verification codes will NOT be sent; signup will proceed without verifying.")
+else:
+    _ok, _detail = _emailer.verify_connection()
+    _EMAIL_PROBLEM = None if _ok else _detail
+    print("EMAIL: SMTP login ok - verification codes will be sent."
+          if _ok else f"EMAIL: SMTP login FAILED - {_detail}")
 for r in (routes_auth.router, routes_org.router, routes_documents.router,
           routes_security.router, routes_billing.router, routes_sso.router,
           routes_admin.router):
@@ -338,10 +353,13 @@ def healthz():
     ephemeral = dialect == "sqlite" and _APP_ENV == "production"
 
     body = {
-        "status": "ok" if db_ok and not ephemeral else "degraded",
+        "status": "ok" if db_ok and not ephemeral and not _EMAIL_PROBLEM else "degraded",
         "database": "up" if db_ok else "down",
         "engine": dialect,
+        "email": "ok" if not _EMAIL_PROBLEM else "unavailable",
     }
+    if _EMAIL_PROBLEM:
+        body["email_detail"] = _EMAIL_PROBLEM
     if ephemeral:
         body["warning"] = ("Running on SQLite in production. This filesystem is ephemeral - "
                            "every account and review is lost on the next restart or deploy. "
