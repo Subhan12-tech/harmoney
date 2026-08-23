@@ -28,6 +28,24 @@ SMTP_FROM = (os.getenv("SMTP_FROM") or "").strip() or (f"Harmony <{SMTP_USER}>" 
 
 APP_NAME = "Harmony"
 
+# Whether email actually WORKS, as opposed to merely being configured. Set once
+# at startup by verify_connection(). The distinction matters: SMTP can be fully
+# configured and still be unreachable - Render's free tier blocks outbound SMTP
+# ports, for instance - and gating signup on "configured" locks every user out
+# of a product whose verification email can never arrive.
+_EMAIL_HEALTHY: bool | None = None
+
+
+def email_working() -> bool:
+    """True only if a real SMTP login succeeded at startup.
+
+    Falls back to the configuration check when startup verification never ran,
+    so importing this module standalone still behaves sensibly.
+    """
+    if _EMAIL_HEALTHY is None:
+        return email_configured()
+    return _EMAIL_HEALTHY
+
 
 def email_configured() -> bool:
     return bool(SMTP_HOST and SMTP_USER and SMTP_PASSWORD)
@@ -61,7 +79,9 @@ def config_problem() -> str | None:
 def verify_connection() -> tuple[bool, str]:
     """Actually log in to the SMTP server. Used at startup so a bad password is
     reported once, at boot, instead of silently on every signup."""
+    global _EMAIL_HEALTHY
     if not email_configured():
+        _EMAIL_HEALTHY = False
         return False, "not configured"
     try:
         if SMTP_PORT == 465:
@@ -72,11 +92,14 @@ def verify_connection() -> tuple[bool, str]:
             with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as s:
                 s.starttls(context=ssl.create_default_context())
                 s.login(SMTP_USER, SMTP_PASSWORD)
+        _EMAIL_HEALTHY = True
         return True, "ok"
     except smtplib.SMTPAuthenticationError:
+        _EMAIL_HEALTHY = False
         return False, ("authentication rejected - for Gmail use an App Password "
                        "(myaccount.google.com/apppasswords), not the account password")
     except Exception as e:
+        _EMAIL_HEALTHY = False
         return False, f"{type(e).__name__}: {e}"
 
 

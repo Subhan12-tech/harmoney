@@ -47,7 +47,7 @@ def signup(body: SignupIn, request: Request):
     # verify step, or called this endpoint directly, must still fail.
     # Skipped entirely when email is not configured, so a deployment without
     # SMTP is usable rather than impossible to sign up for.
-    if emailer.email_configured() and not _email_is_verified(body.email):
+    if emailer.email_working() and not _email_is_verified(body.email):
         raise HTTPException(400, "Verify your email address before creating a workspace.")
 
     with Session(engine) as s:
@@ -210,10 +210,12 @@ def send_code(body: SendCodeIn):
         # No SMTP configured. Say so plainly rather than claiming an email was
         # sent - and in development only, hand back the code so the flow works.
         print(f"[dev] verification code for {email}: {code}")
-        if APP_ENV != "production":
-            return {"status": "not_sent", "detail": "Email is not configured. Use the code from the server log.",
-                    "dev_code": code}
-        raise HTTPException(503, "Could not send the verification email. Contact support.")
+        # Do NOT 503 here. Signup does not require verification when email is
+        # not working, so failing this call would block the flow on a step that
+        # is no longer load-bearing. Report it and let the user continue.
+        return {"status": "not_sent",
+                "detail": "Email is unavailable on this server, so verification is skipped. Continue.",
+                **({"dev_code": code} if APP_ENV != "production" else {})}
 
     return {"status": "sent", "detail": f"Code sent to {email}. It expires in {CODE_TTL_MINUTES} minutes."}
 
@@ -227,6 +229,10 @@ def check_code(body: CheckCodeIn):
         row = s.exec(select(EmailCode).where(EmailCode.email == email,
                                              EmailCode.purpose == "signup")).first()
         if not row:
+            # Nothing to check against because nothing could be sent. Signup is
+            # not gated in that state, so accept rather than dead-end the user.
+            if not emailer.email_working():
+                return {"status": "skipped", "detail": "Email verification is unavailable on this server."}
             raise HTTPException(400, "No code was requested for that address.")
         if row.expires_at < datetime.utcnow():
             s.delete(row); s.commit()
@@ -234,6 +240,8 @@ def check_code(body: CheckCodeIn):
         if row.attempts >= MAX_ATTEMPTS:
             raise HTTPException(429, "Too many incorrect attempts. Request a new code.")
 
+        if not emailer.email_working():
+            return {"status": "skipped", "detail": "Email verification is unavailable on this server."}
         if _hash_code(code) != row.code_hash:
             row.attempts += 1
             s.add(row); s.commit()

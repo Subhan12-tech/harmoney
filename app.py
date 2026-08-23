@@ -56,12 +56,17 @@ import emailer as _emailer
 _EMAIL_PROBLEM = _emailer.config_problem()
 if _EMAIL_PROBLEM:
     print(f"EMAIL: {_EMAIL_PROBLEM}")
-    print("EMAIL: verification codes will NOT be sent; signup will proceed without verifying.")
+    _emailer.verify_connection()      # sets the healthy flag to False
 else:
     _ok, _detail = _emailer.verify_connection()
     _EMAIL_PROBLEM = None if _ok else _detail
-    print("EMAIL: SMTP login ok - verification codes will be sent."
-          if _ok else f"EMAIL: SMTP login FAILED - {_detail}")
+    if not _ok:
+        print(f"EMAIL: SMTP login FAILED - {_detail}")
+if _EMAIL_PROBLEM:
+    print("EMAIL: verification codes will NOT be sent; signup proceeds WITHOUT verifying "
+          "so users are not locked out of a product whose code can never arrive.")
+else:
+    print("EMAIL: SMTP login ok - verification codes will be sent.")
 for r in (routes_auth.router, routes_org.router, routes_documents.router,
           routes_security.router, routes_billing.router, routes_sso.router,
           routes_admin.router):
