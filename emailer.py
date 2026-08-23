@@ -134,7 +134,14 @@ def _send_mailjet(to: str, subject: str, text: str, html: str) -> tuple[bool, st
     except urllib.error.HTTPError as e:
         body = e.read().decode(errors="replace")[:300]
         if e.code in (401, 403):
-            return False, "Mailjet rejected MAILJET_API_KEY / MAILJET_SECRET."
+            # Include the body. A 401 on send while the credential CHECK passed
+            # is contradictory, and the difference - swapped keys, a truncated
+            # secret, an account Mailjet has not activated for sending yet - is
+            # only visible in what they actually said.
+            return False, (f"Mailjet rejected the credentials on send (HTTP {e.code}) even though the "
+                           f"key check passed. Mailjet said: {body} "
+                           "Check MAILJET_API_KEY and MAILJET_SECRET are not swapped, and that neither "
+                           "has trailing whitespace.")
         # Mailjet refuses an unvalidated sender. One click in their dashboard.
         if "sender" in body.lower() or e.code == 400:
             return False, (f"Mailjet will not send from {MAILJET_FROM}. Add and validate that "
