@@ -23,6 +23,14 @@ export function HeroSection() {
         style={{ padding: "80px 40px 120px", minHeight: 600 }}
       >
         <div>
+          {/* The badge here claimed "Now with SOC 2 Type II". Harmony does not
+              hold that certification - BACKEND_README lists it as not achieved -
+              and asserting a security certification you do not have is a
+              materially false claim, not optimistic marketing. Compliance buyers
+              verify them, and this product is sold to compliance buyers.
+
+              Replaced with something true. Put a certification badge back when
+              there is a certificate behind it. */}
           <div
             className="inline-flex items-center gap-2 rounded-[20px] border text-muted2"
             style={{
@@ -37,7 +45,7 @@ export function HeroSection() {
               className="inline-block h-1.5 w-1.5 rounded-full"
               style={{ background: "#5aff9e", boxShadow: "0 0 8px #5aff9e" }}
             />
-            Now with SOC 2 Type II
+            Every finding cites its source
           </div>
 
           <h1
