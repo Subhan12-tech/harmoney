@@ -44,8 +44,26 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
+      data-theme="dark"
       className={`${instrumentSerif.variable} ${inter.variable} ${jetbrainsMono.variable} ${manrope.variable}`}
+      suppressHydrationWarning
     >
+      <head>
+        {/*
+          Applies the stored theme BEFORE first paint. Without this the page
+          renders dark, React hydrates, and only then switches - a white flash
+          on every navigation for anyone using light mode.
+
+          It has to be inline and synchronous in <head>; a component cannot run
+          early enough. suppressHydrationWarning above is because this
+          deliberately changes an attribute the server rendered.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('harmony.theme');if(!t){t=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';}document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className="font-sans antialiased">{children}</body>
     </html>
   );

@@ -53,6 +53,85 @@
   --radius-lg: 12px;
 }
 
+/* ============================================================
+   Light theme
+   ------------------------------------------------------------
+   Same tokens, inverted relationships - not a different design.
+   Every component reads var(--surface), var(--border) and so on,
+   so redefining them here re-themes the whole product without a
+   single component knowing light mode exists.
+
+   The two are not mirror images. On dark, surfaces are white films
+   over the ground; on light, a plain white card on a grey page
+   reads as raised, so the ground goes grey and cards go white -
+   the opposite arrangement, for the same visual effect.
+
+   Selected by [data-theme="light"] on <html>, set before paint by
+   the inline script in layout.tsx so there is no flash.
+   ============================================================ */
+:root[data-theme="light"] {
+  --bg: #f7f7f8;
+  --bg-elev: #ffffff;
+
+  /* Ink films over paper, mirroring the white films used on dark. */
+  --surface: #ffffff;
+  --surface-2: rgba(9, 9, 11, 0.045);
+
+  --border: rgba(9, 9, 11, 0.09);
+  --border-strong: rgba(9, 9, 11, 0.16);
+
+  --text: #18181b;
+  --muted: rgba(24, 24, 27, 0.62);
+  --faint: rgba(24, 24, 27, 0.45);
+
+  /* The filled primary inverts with the ground: black on white. */
+  --accent: #18181b;
+  --on-accent: #ffffff;
+
+  --accent-2: #62636a;
+
+  /* Darkened so they hold contrast against white rather than glowing. */
+  --warn: #a86a1e;
+  --danger: #c0392f;
+}
+
+/* Cards need a lift on light: on dark they separate by being lighter than the
+   ground, and on light they are the same white as everything else. */
+:root[data-theme="light"] .app-card {
+  box-shadow: 0 1px 2px rgba(9, 9, 11, 0.05);
+}
+
+:root[data-theme="light"] .app-input {
+  background: #ffffff;
+}
+
+:root[data-theme="light"] .app-table tbody tr:hover {
+  background: rgba(9, 9, 11, 0.022);
+}
+
+:root[data-theme="light"] .app-skin ::-webkit-scrollbar-thumb {
+  background: rgba(9, 9, 11, 0.18);
+}
+
+:root[data-theme="light"] a:focus-visible,
+:root[data-theme="light"] button:focus-visible,
+:root[data-theme="light"] input:focus-visible,
+:root[data-theme="light"] select:focus-visible,
+:root[data-theme="light"] textarea:focus-visible,
+:root[data-theme="light"] [tabindex]:focus-visible {
+  outline-color: rgba(9, 9, 11, 0.55);
+}
+
+/* The select chevron is a data-URI stroke colour and cannot inherit. */
+:root[data-theme="light"] .h-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2362636a' stroke-width='2'%3E%3Cpolyline points='5 8 12 15 19 8'/%3E%3C/svg%3E");
+}
+
+/* The section mark is a lit object in a dark tile. On light it keeps its own
+   dark ground on purpose - it is a rendered object, not a surface, and
+   inverting it would flatten the lighting that makes it read as three-
+   dimensional. */
+
 * {
   box-sizing: border-box;
 }

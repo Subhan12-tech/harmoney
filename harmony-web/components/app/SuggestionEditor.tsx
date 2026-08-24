@@ -74,7 +74,7 @@ export function SuggestionEditor({
         AI suggestion — requires human review
       </h2>
 
-      <p style={{ fontSize: 13.5, margin: 0, color: "rgba(238,241,244,.9)" }}>{issue.suggestion}</p>
+      <p style={{ fontSize: 13.5, margin: 0, color: "var(--text)" }}>{issue.suggestion}</p>
 
       {/* ---- Resolved ---- */}
       {resolution ? (
@@ -115,7 +115,7 @@ export function SuggestionEditor({
                 padding: "10px 12px",
                 fontSize: 13,
                 lineHeight: 1.55,
-                color: "rgba(238,241,244,.9)",
+                color: "var(--text)",
                 margin: "0 0 10px",
               }}
             >
@@ -210,7 +210,7 @@ export function SuggestionEditor({
               padding: "10px 12px",
               fontSize: 13,
               lineHeight: 1.55,
-              color: "rgba(238,241,244,.9)",
+              color: "var(--text)",
               margin: 0,
             }}
           >

@@ -82,7 +82,7 @@ export function ParticleField() {
           cx={d.x}
           cy={d.y}
           r={d.r}
-          fill={d.bright ? "color-mix(in srgb, var(--accent) 90%, white)" : "rgba(238,241,244,.5)"}
+          fill={d.bright ? "color-mix(in srgb, var(--accent) 90%, white)" : "var(--faint)"}
         />
       ))}
     </svg>

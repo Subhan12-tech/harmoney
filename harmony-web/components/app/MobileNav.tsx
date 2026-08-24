@@ -36,7 +36,7 @@ export function MobileNav() {
                 borderRadius: 20,
                 fontSize: 13,
                 whiteSpace: "nowrap",
-                color: active ? "var(--text)" : "rgba(238,241,244,.65)",
+                color: active ? "var(--text)" : "var(--muted)",
                 background: active ? "color-mix(in srgb, var(--accent) 14%, transparent)" : "var(--surface)",
                 border: "1px solid var(--border)",
               }}

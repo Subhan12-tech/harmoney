@@ -127,7 +127,7 @@ function UploadRow({
               height: 6,
               width: `${u.pct}%`,
               borderRadius: 3,
-              background: cancelled ? "rgba(238,241,244,.2)" : token,
+              background: cancelled ? "var(--faint)" : token,
               transition: "width 220ms linear",
             }}
           />

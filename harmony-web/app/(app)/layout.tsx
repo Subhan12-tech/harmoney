@@ -6,7 +6,8 @@ import { MobileNav } from "@/components/app/MobileNav";
 import { Header } from "@/components/app/Header";
 
 /**
- * Authenticated app shell — the dark product skin (#0a0d12 + Manrope/Inter).
+ * Authenticated app shell. Theme comes from the tokens in globals.css, which
+ * `data-theme` on <html> switches between dark and light.
  *
  * `RoleProvider` sits above everything so the header's role switcher re-gates
  * UI across Review, Team and every Settings tab from one place.

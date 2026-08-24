@@ -70,7 +70,7 @@ export function BrandPanel({
         )}
       </div>
 
-      <p className="relative" style={{ color: "rgba(238,241,244,.35)", fontSize: 12, margin: 0 }}>
+      <p className="relative" style={{ color: "var(--faint)", fontSize: 12, margin: 0 }}>
         © 2026 Harmony Technologies. Enterprise disclosure consistency platform.
       </p>
     </aside>

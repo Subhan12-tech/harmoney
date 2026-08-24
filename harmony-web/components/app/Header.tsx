@@ -9,6 +9,7 @@ import { CURRENT_USER, NOTIFICATIONS, getOrg } from "@/lib/data";
 import { Popover } from "./Popover";
 import { RoleSwitcher } from "./RoleSwitcher";
 import { BellIcon, SearchIcon } from "./icons";
+import { ThemeToggle } from "./ThemeToggle";
 
 /** Page titles are derived from the URL so the header stays in sync with routing. */
 function titleFor(pathname: string): string {
@@ -71,7 +72,7 @@ export function Header() {
         </label>
         <span
           className="pointer-events-none absolute"
-          style={{ left: 10, top: "50%", transform: "translateY(-50%)", color: "rgba(238,241,244,.4)" }}
+          style={{ left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--faint)" }}
         >
           <SearchIcon size={15} />
         </span>
@@ -92,6 +93,7 @@ export function Header() {
       </div>
 
       <div className="ml-auto flex items-center gap-3">
+        <ThemeToggle />
         <RoleSwitcher />
 
         {/* ---- Notifications ---- */}

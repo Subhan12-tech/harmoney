@@ -36,7 +36,7 @@ export function ReviewPanel({
           <span style={severityChipStyle(issue.severity)}>{issue.severity}</span>
         </div>
 
-        <p style={{ fontSize: 13.5, margin: 0, color: "rgba(238,241,244,.9)" }}>{issue.reason}</p>
+        <p style={{ fontSize: 13.5, margin: 0, color: "var(--text)" }}>{issue.reason}</p>
 
         <div style={{ height: 1, background: "var(--border)", margin: "12px 0" }} />
 
@@ -105,7 +105,7 @@ export function ReviewPanel({
         </div>
         <div
           className="flex flex-wrap gap-1.5"
-          style={{ fontSize: 11.5, color: "rgba(238,241,244,.85)" }}
+          style={{ fontSize: 11.5, color: "var(--text)" }}
         >
           {AI_WORKFLOW.map((step, i) => {
             const isLast = i === AI_WORKFLOW.length - 1;

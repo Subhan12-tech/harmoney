@@ -251,7 +251,7 @@ export function SecurityPanel() {
         {/* --- Step 1: scan the secret --- */}
         {secret && (
           <>
-            <p style={{ fontSize: 13.5, color: "rgba(238,241,244,.85)", margin: "0 0 12px" }}>
+            <p style={{ fontSize: 13.5, color: "var(--text)", margin: "0 0 12px" }}>
               Add this secret to your authenticator app, then enter the 6-digit code it shows.
             </p>
             <code style={codeBlockStyle}>{secret}</code>
@@ -283,7 +283,7 @@ export function SecurityPanel() {
         {/* --- Step 2: the real backup codes, shown once --- */}
         {backupCodes.length > 0 && (
           <>
-            <p style={{ fontSize: 13.5, color: "rgba(238,241,244,.85)", margin: "0 0 14px" }}>
+            <p style={{ fontSize: 13.5, color: "var(--text)", margin: "0 0 14px" }}>
               Store these backup codes somewhere safe — each works once, and they cannot be shown again.
             </p>
             <ul className="grid gap-2" style={{ gridTemplateColumns: "1fr 1fr", listStyle: "none", margin: "0 0 16px", padding: 0 }}>
@@ -302,7 +302,7 @@ export function SecurityPanel() {
         {/* --- Already on: offer to turn it off --- */}
         {mfaEnabled && !secret && backupCodes.length === 0 && (
           <>
-            <p style={{ fontSize: 13.5, color: "rgba(238,241,244,.85)", margin: "0 0 14px" }}>
+            <p style={{ fontSize: 13.5, color: "var(--text)", margin: "0 0 14px" }}>
               Two-factor authentication is active on your account. To turn it off, enter a current code from your
               authenticator app.
             </p>

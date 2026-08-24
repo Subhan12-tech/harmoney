@@ -92,6 +92,8 @@ export default function DocumentsPage() {
 
   return (
     <>
+      <UploadProgressBar uploads={uploads} />
+
       <PageHeader
         title="Documents"
         blurb="Two things happen here: you build the evidence library once, then check each new draft against it."
@@ -131,6 +133,11 @@ export default function DocumentsPage() {
           />
 
         </div>
+
+        {/* Directly under the zone that feeds it. It used to render after both
+            steps, so an upload started at the top of the page reported its
+            progress off-screen and looked like nothing had happened. */}
+        <UploadList uploads={uploads} onCancel={cancel} onRemove={remove} onClearCompleted={clearCompleted} />
       </section>
 
       {/* Step 2: the draft being prepared now. */}
@@ -171,8 +178,6 @@ export default function DocumentsPage() {
           e.target.value = "";
         }}
       />
-
-      <UploadList uploads={uploads} onCancel={cancel} onRemove={remove} onClearCompleted={clearCompleted} />
 
       {/* ---- Filters ---- */}
       <div className="flex flex-wrap gap-2.5" style={{ marginBottom: 16 }}>
@@ -270,6 +275,46 @@ function StepLabel({ n, title, detail }: { n: number; title: string; detail: str
           {detail}
         </p>
       </div>
+    </div>
+  );
+}
+
+/**
+ * A thin bar pinned to the top of the viewport while anything is uploading.
+ *
+ * The per-file list gives detail; this exists so the fact that work is
+ * happening is visible from anywhere on the page, including mid-scroll.
+ */
+function UploadProgressBar({ uploads }: { uploads: { pct: number; state: string }[] }) {
+  const active = uploads.filter((u) => u.state === "uploading");
+  if (active.length === 0) return null;
+  const pct = Math.round(active.reduce((sum, u) => sum + u.pct, 0) / active.length);
+
+  return (
+    <div
+      role="progressbar"
+      aria-valuenow={pct}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-label={`Uploading ${active.length} file${active.length === 1 ? "" : "s"}`}
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 2,
+        background: "transparent",
+        zIndex: 60,
+      }}
+    >
+      <div
+        style={{
+          height: 2,
+          width: `${Math.max(4, pct)}%`,
+          background: "var(--accent)",
+          transition: "width 200ms linear",
+        }}
+      />
     </div>
   );
 }

@@ -184,7 +184,7 @@ function ReviewPageInner() {
                 style={{
                   fontSize: 14.5,
                   lineHeight: 1.8,
-                  color: "rgba(238,241,244,.92)",
+                  color: "var(--text)",
                   margin: "0 0 16px",
                 }}
               >
@@ -258,7 +258,7 @@ function ReviewPageInner() {
           <h2 id="analysis-heading" className="kicker" style={{ marginBottom: 8 }}>
             AI analysis
           </h2>
-          <p style={{ fontSize: 14, color: "rgba(238,241,244,.9)", margin: "0 0 12px" }}>
+          <p style={{ fontSize: 14, color: "var(--text)", margin: "0 0 12px" }}>
             This draft has not been compared against the evidence library yet. Running the analysis retrieves
             related prior statements, cites them, and returns findings for a human to review.
           </p>
@@ -294,7 +294,7 @@ function ReviewPageInner() {
           <h2 id="decision-heading" className="kicker" style={{ marginBottom: 8 }}>
             Review decision
           </h2>
-          <p style={{ fontSize: 14, maxWidth: 640, color: "rgba(238,241,244,.9)" }}>
+          <p style={{ fontSize: 14, maxWidth: 640, color: "var(--text)" }}>
             AI analysis is complete. A human reviewer must approve this document before it can be published.{" "}
             {issues.length} issue{issues.length === 1 ? " was" : "s were"} identified — {highCount} high risk,{" "}
             {unresolved} still unresolved.
@@ -455,7 +455,7 @@ const noticeStyle: React.CSSProperties = {
 
 const modalTextStyle: React.CSSProperties = {
   fontSize: 13.5,
-  color: "rgba(238,241,244,.85)",
+  color: "var(--text)",
   margin: "0 0 8px",
 };
 

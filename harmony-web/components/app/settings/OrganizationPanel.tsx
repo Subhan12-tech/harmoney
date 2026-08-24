@@ -190,7 +190,7 @@ export function OrganizationPanel() {
       )}
 
       <Modal open={transferOpen} onClose={() => setTransferOpen(false)} title="Transfer ownership" width={420}>
-        <p style={{ fontSize: 13.5, color: "rgba(238,241,244,.85)", margin: "0 0 16px" }}>
+        <p style={{ fontSize: 13.5, color: "var(--text)", margin: "0 0 16px" }}>
           Ownership of {org.name} moves to the member you nominate. You keep Admin access, and the change is
           written to the audit trail.
         </p>
@@ -216,7 +216,7 @@ export function OrganizationPanel() {
       </Modal>
 
       <Modal open={deleteOpen} onClose={() => setDeleteOpen(false)} title="Delete workspace" width={440}>
-        <p style={{ fontSize: 13.5, color: "rgba(238,241,244,.85)", margin: "0 0 12px" }}>
+        <p style={{ fontSize: 13.5, color: "var(--text)", margin: "0 0 12px" }}>
           Deleting {org.name} removes every document, evidence index, and audit record in it. This cannot be
           undone.
         </p>

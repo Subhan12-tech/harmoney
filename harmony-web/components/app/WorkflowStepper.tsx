@@ -40,7 +40,7 @@ export function WorkflowStepper({ currentIndex }: { currentIndex: number }) {
                   width: 6,
                   height: 6,
                   borderRadius: "50%",
-                  background: i <= currentIndex ? "currentColor" : "rgba(238,241,244,.3)",
+                  background: i <= currentIndex ? "currentColor" : "var(--faint)",
                 }}
               />
               {label}

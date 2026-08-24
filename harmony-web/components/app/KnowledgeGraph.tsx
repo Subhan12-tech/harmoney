@@ -123,7 +123,7 @@ export function KnowledgeGraph({ nodes }: { nodes: GraphNodeDef[] }) {
                   y={n.y + 4 + n.r + 12}
                   textAnchor="middle"
                   fontSize={11}
-                  fill="rgba(238,241,244,.85)"
+                  fill="var(--text)"
                 >
                   {n.label1}
                 </text>
@@ -132,7 +132,7 @@ export function KnowledgeGraph({ nodes }: { nodes: GraphNodeDef[] }) {
                   y={n.y + 4 + n.r + 26}
                   textAnchor="middle"
                   fontSize={11}
-                  fill="rgba(238,241,244,.6)"
+                  fill="var(--muted)"
                 >
                   {n.label2}
                 </text>
@@ -170,7 +170,7 @@ export function KnowledgeGraph({ nodes }: { nodes: GraphNodeDef[] }) {
               style={{
                 fontSize: 13,
                 lineHeight: 1.55,
-                color: "rgba(238,241,244,.9)",
+                color: "var(--text)",
                 padding: "10px 12px",
                 marginBottom: 8,
                 background: "var(--bg-elev)",
