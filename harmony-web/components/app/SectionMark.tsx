@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 /**
  * The glossy mark that introduces each section.
  *
- * A dark tile holding a lit object, which rotates and settles when you arrive.
+ * A tile holding a lit object, which rotates and settles when you arrive.
  * Built from gradients and SVG rather than image files: it scales to any size,
  * re-tints with the theme tokens, weighs nothing, and stays crisp on any
  * display — none of which a PNG of a rendered object would do.
@@ -15,6 +15,11 @@ import { usePathname } from "next/navigation";
  * and slightly left, a soft floor bounce beneath, and a hairline rim where the
  * object turns away. That consistency is what makes a set of these read as one
  * family rather than a pile of effects.
+ *
+ * Every colour comes from a --mark-* variable, so the theme decides the
+ * MATERIAL while the lighting stays fixed: a dark polished body on dark, a pale
+ * ceramic one on light. Hardcoding it dark made the mark a black blob on a
+ * light page - the object and the interface stopped looking like one product.
  */
 
 type MarkShape = "sphere" | "chevron" | "stack" | "ring" | "bars" | "people" | "gear" | "check";
@@ -56,11 +61,12 @@ export function SectionMark({ size = 56, shape: forced }: { size?: number; shape
         flex: "none",
         position: "relative",
         overflow: "hidden",
-        // Tile: lit from above, falling to near-black at the base.
+        // Tile: lit from above, falling away at the base. The theme supplies the
+        // material; the lighting direction is the same in both.
         background:
-          "radial-gradient(120% 100% at 30% 0%, #24262a 0%, #131417 38%, #0a0b0d 100%)",
+          "var(--mark-tile)",
         boxShadow:
-          "inset 0 1px 0 rgba(255,255,255,0.10), inset 0 0 0 1px rgba(255,255,255,0.045), 0 8px 22px rgba(0,0,0,0.55)",
+          "var(--mark-tile-shadow)",
       }}
     >
       {/* Specular sweep across the tile's upper-left, the single light source. */}
@@ -69,7 +75,7 @@ export function SectionMark({ size = 56, shape: forced }: { size?: number; shape
           position: "absolute",
           inset: 0,
           background:
-            "radial-gradient(60% 45% at 22% 6%, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 70%)",
+            "var(--mark-specular)",
           pointerEvents: "none",
         }}
       />
@@ -92,9 +98,9 @@ function Shape({ shape, size }: { shape: MarkShape; size: number }) {
           height: s,
           borderRadius: "50%",
           background:
-            "radial-gradient(circle at 34% 26%, #f2f3f5 0%, #b9bcc2 14%, #6e7278 34%, #303338 58%, #131417 82%, #0c0d0f 100%)",
+            "var(--mark-sphere)",
           boxShadow:
-            "inset -2px -3px 8px rgba(0,0,0,0.65), inset 2px 2px 6px rgba(255,255,255,0.10), 0 3px 10px rgba(0,0,0,0.5)",
+            "var(--mark-sphere-shadow)",
           position: "relative",
         }}
       >
@@ -105,7 +111,7 @@ function Shape({ shape, size }: { shape: MarkShape; size: number }) {
             inset: 0,
             borderRadius: "50%",
             background:
-              "radial-gradient(circle at 62% 88%, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0) 42%)",
+              "var(--mark-bounce)",
           }}
         />
       </div>
@@ -120,14 +126,14 @@ function Shape({ shape, size }: { shape: MarkShape; size: number }) {
       <defs>
         {/* One shared material for every extruded shape, so the set matches. */}
         <linearGradient id="markFace" x1="20" y1="6" x2="78" y2="96" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#3a3d43" />
-          <stop offset="0.45" stopColor="#1c1e22" />
-          <stop offset="1" stopColor="#0d0e10" />
+          <stop stopColor="var(--mark-face-a)" />
+          <stop offset="0.45" stopColor="var(--mark-face-b)" />
+          <stop offset="1" stopColor="var(--mark-face-c)" />
         </linearGradient>
         <linearGradient id="markEdge" x1="18" y1="4" x2="70" y2="92" gradientUnits="userSpaceOnUse">
-          <stop stopColor="rgba(255,255,255,0.75)" />
-          <stop offset="0.4" stopColor="rgba(255,255,255,0.22)" />
-          <stop offset="1" stopColor="rgba(255,255,255,0.06)" />
+          <stop stopColor="var(--mark-edge-a)" />
+          <stop offset="0.4" stopColor="var(--mark-edge-b)" />
+          <stop offset="1" stopColor="var(--mark-edge-c)" />
         </linearGradient>
       </defs>
 
@@ -147,7 +153,7 @@ function Shape({ shape, size }: { shape: MarkShape; size: number }) {
       {shape === "ring" && (
         <>
           <circle cx="50" cy="50" r="30" fill={fill} stroke={stroke} strokeWidth="3" />
-          <circle cx="50" cy="50" r="13" fill="#0b0c0e" stroke={stroke} strokeWidth="2" />
+          <circle cx="50" cy="50" r="13" fill="var(--mark-hollow)" stroke={stroke} strokeWidth="2" />
         </>
       )}
 
@@ -177,14 +183,14 @@ function Shape({ shape, size }: { shape: MarkShape; size: number }) {
             strokeWidth="2.4"
             strokeLinejoin="round"
           />
-          <circle cx="50" cy="50" r="11" fill="#0b0c0e" stroke={stroke} strokeWidth="2" />
+          <circle cx="50" cy="50" r="11" fill="var(--mark-hollow)" stroke={stroke} strokeWidth="2" />
         </>
       )}
 
       {shape === "check" && (
         <>
           <rect x="16" y="16" width="68" height="68" rx="18" fill={fill} stroke={stroke} strokeWidth="2.6" />
-          <path d="M34 51 L45 62 L67 40" stroke="rgba(255,255,255,0.85)" strokeWidth="6"
+          <path d="M34 51 L45 62 L67 40" stroke="var(--mark-tick)" strokeWidth="6"
                 strokeLinecap="round" strokeLinejoin="round" fill="none" />
         </>
       )}

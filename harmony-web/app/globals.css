@@ -127,10 +127,58 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2362636a' stroke-width='2'%3E%3Cpolyline points='5 8 12 15 19 8'/%3E%3C/svg%3E");
 }
 
-/* The section mark is a lit object in a dark tile. On light it keeps its own
-   dark ground on purpose - it is a rendered object, not a surface, and
-   inverting it would flatten the lighting that makes it read as three-
-   dimensional. */
+/* ---- Section mark ----
+   The mark is a lit object in a tile. It was hardcoded dark, which on a light
+   page read as a black blob belonging to a different design - the object and
+   the interface stopped looking like one product.
+
+   Both themes now describe the SAME object under the same lighting: one source
+   above and slightly left, a floor bounce beneath, a rim where the surface
+   turns away. Only what the object is made of changes - a dark polished body on
+   dark, a pale ceramic one on light - so the family reads as consistent in
+   either theme rather than as two different marks. */
+:root {
+  --mark-tile: radial-gradient(120% 100% at 30% 0%, #24262a 0%, #131417 38%, #0a0b0d 100%);
+  --mark-tile-shadow: inset 0 1px 0 rgba(255,255,255,0.10),
+                      inset 0 0 0 1px rgba(255,255,255,0.045),
+                      0 8px 22px rgba(0,0,0,0.55);
+  --mark-specular: radial-gradient(60% 45% at 22% 6%, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 70%);
+  --mark-sphere: radial-gradient(circle at 34% 26%, #f2f3f5 0%, #b9bcc2 14%, #6e7278 34%, #303338 58%, #131417 82%, #0c0d0f 100%);
+  --mark-sphere-shadow: inset -2px -3px 8px rgba(0,0,0,0.65),
+                        inset 2px 2px 6px rgba(255,255,255,0.10),
+                        0 3px 10px rgba(0,0,0,0.5);
+  --mark-bounce: radial-gradient(circle at 62% 88%, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0) 42%);
+  --mark-face-a: #3a3d43;
+  --mark-face-b: #1c1e22;
+  --mark-face-c: #0d0e10;
+  --mark-edge-a: rgba(255,255,255,0.75);
+  --mark-edge-b: rgba(255,255,255,0.22);
+  --mark-edge-c: rgba(255,255,255,0.06);
+  --mark-hollow: #0b0c0e;
+  --mark-tick: rgba(255,255,255,0.85);
+}
+
+:root[data-theme="light"] {
+  --mark-tile: radial-gradient(120% 100% at 30% 0%, #ffffff 0%, #f1f1f3 42%, #e2e2e6 100%);
+  --mark-tile-shadow: inset 0 1px 0 rgba(255,255,255,0.9),
+                      inset 0 0 0 1px rgba(9,9,11,0.06),
+                      0 1px 3px rgba(9,9,11,0.10);
+  --mark-specular: radial-gradient(60% 45% at 22% 6%, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0) 70%);
+  /* Pale ceramic rather than polished dark - same lighting, different material. */
+  --mark-sphere: radial-gradient(circle at 34% 26%, #ffffff 0%, #f0f0f2 16%, #d2d3d7 38%, #a9abb1 62%, #7c7e85 84%, #63656b 100%);
+  --mark-sphere-shadow: inset -2px -3px 8px rgba(9,9,11,0.22),
+                        inset 2px 2px 6px rgba(255,255,255,0.85),
+                        0 2px 6px rgba(9,9,11,0.16);
+  --mark-bounce: radial-gradient(circle at 62% 88%, rgba(255,255,255,0.75) 0%, rgba(255,255,255,0) 42%);
+  --mark-face-a: #fdfdfd;
+  --mark-face-b: #e8e8ec;
+  --mark-face-c: #d3d4d9;
+  --mark-edge-a: rgba(9,9,11,0.42);
+  --mark-edge-b: rgba(9,9,11,0.18);
+  --mark-edge-c: rgba(9,9,11,0.07);
+  --mark-hollow: #f4f4f6;
+  --mark-tick: rgba(9,9,11,0.72);
+}
 
 * {
   box-sizing: border-box;
