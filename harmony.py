@@ -70,7 +70,29 @@ if not QDRANT_URL or not QDRANT_API_KEY:
         "  QDRANT_API_KEY=your_key"
     )
 
-model = ChatMistralAI(model="mistral-small-2503", api_key=os.getenv("MISTRAL_API_KEY"))
+# ----------------------------------------------------------------------------
+# THE MODEL
+# ----------------------------------------------------------------------------
+# temperature=0. This was previously unset, so it ran at the provider default and
+# every review was a dice roll: the same draft, checked twice against the same
+# corpus, produced different findings. On the evaluation set a fully consistent
+# draft returned zero issues on one run and two false positives on the next, with
+# no code change between them.
+#
+# For a product whose claim is that a human can trust the findings, "ask again
+# and get a different answer" is not a tuning detail. It also makes measurement
+# meaningless - you cannot tell an improvement from noise.
+#
+# Model is configurable so a larger one can be tried without a code change.
+# mistral-small is the cheapest tier and the weakest at this task; if accuracy
+# still falls short after this, changing HARMONY_MODEL is the next lever, well
+# before anything involving fine-tuning.
+HARMONY_MODEL = os.getenv("HARMONY_MODEL", "mistral-small-2503")
+HARMONY_TEMPERATURE = float(os.getenv("HARMONY_TEMPERATURE", "0"))
+
+model = ChatMistralAI(model=HARMONY_MODEL, temperature=HARMONY_TEMPERATURE,
+                      api_key=os.getenv("MISTRAL_API_KEY"))
+print(f"MODEL: {HARMONY_MODEL} at temperature {HARMONY_TEMPERATURE}")
 
 
 # ============================================================================
@@ -228,6 +250,28 @@ vector_store = QdrantVectorStore(
 
 SPLITTER = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
 
+# ----------------------------------------------------------------------------
+# RELEVANCE FLOOR
+# ----------------------------------------------------------------------------
+# Cosine similarity below which a retrieved chunk is not offered as evidence.
+#
+# Why this exists: _supported() proves a quoted sentence is REAL, not that it is
+# ABOUT the claim. Given any chunk, the model will find something to say. A draft
+# announcing a partnership - a topic absent from the corpus entirely - was
+# flagged at 95% confidence against "We do not currently operate an Asia-Pacific
+# region." Both sentences genuine, nothing to do with each other.
+#
+# Withholding weak evidence is the fix: with nothing close enough to pair
+# against, there is no false finding to make.
+#
+# Measured, not guessed. Top-chunk similarity on the evaluation set:
+#   drafts with real contradictions   0.856 - 0.915
+#   draft whose topic is absent       0.818
+# 0.83 sits in that gap. It is a narrow gap on a small sample, so it is
+# configurable - raise it if false positives persist, lower it if real findings
+# start disappearing.
+RELEVANCE_FLOOR = float(os.getenv("HARMONY_RELEVANCE_FLOOR", "0.83"))
+
 # multi-tenancy: har org ka data alag rakhne ke liye. run_review() ise set karta hai,
 # retrieve/add functions ise metadata filter/tag ke tor par use karte hain.
 #
@@ -346,7 +390,11 @@ def retrieve_context(query: str, k: int = 6) -> str:
     if _org:
         flt = Filter(must=[FieldCondition(key="metadata.org_id", match=MatchValue(value=_org))])
     try:
-        docs = vector_store.similarity_search(query, k=k, filter=flt)
+        scored = vector_store.similarity_search_with_score(query, k=k, filter=flt)
+        docs = [d for d, score in scored if score >= RELEVANCE_FLOOR]
+        if scored and not docs:
+            print(f"  retrieval: nothing above the relevance floor "
+                  f"(best {scored[0][1]:.3f} < {RELEVANCE_FLOOR}) - no evidence offered")
     except Exception as e:
         print("retrieve error:", e)
         return "No relevant past statements found."
@@ -829,7 +877,14 @@ def structured_issues_agent(state: AgentState) -> dict:
     if _org:
         flt = Filter(must=[FieldCondition(key="metadata.org_id", match=MatchValue(value=_org))])
     try:
-        docs = vector_store.similarity_search(draft_text, k=8, filter=flt)
+        # k=8. Raising it to 14 was tried and made things worse: a subtle-drift
+        # case went from 3/3 to 2/3, because the extra chunks were noise the
+        # model had to reason around. More evidence is not better evidence.
+        scored = vector_store.similarity_search_with_score(draft_text, k=8, filter=flt)
+        docs = [d for d, score in scored if score >= RELEVANCE_FLOOR]
+        if scored and not docs:
+            print(f"  issues: corpus has nothing about this draft "
+                  f"(best {scored[0][1]:.3f} < {RELEVANCE_FLOOR}) - reporting no issues")
     except Exception as e:
         print("structured issues: evidence retrieval error:", e)
         docs = []
@@ -878,6 +933,11 @@ supported by the evidence chunks above, produce one issue with:
 
 Rules:
 - If you cannot find a supporting sentence in the evidence chunks, do not report that item.
+- ABSENCE OF EVIDENCE IS NOT A CONTRADICTION. The evidence below is a RETRIEVED
+  SAMPLE of the company's history, not the whole of it. Never flag a claim for
+  being unverifiable or missing from the evidence - only for CONFLICTING with a
+  chunk. But a claim that mischaracterises a trend the evidence does show - "held
+  steady" where the evidence shows three consecutive declines - IS a conflict.
 - Never invent or paraphrase a quote — copy it exactly, or don't use it.
 - Only flag genuinely material issues (numbers, dates, guidance, claims, terminology changes).
 - If the draft is fully consistent with the evidence, return an empty issues list.
