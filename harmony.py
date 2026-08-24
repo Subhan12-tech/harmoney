@@ -390,11 +390,13 @@ def retrieve_context(query: str, k: int = 6) -> str:
     if _org:
         flt = Filter(must=[FieldCondition(key="metadata.org_id", match=MatchValue(value=_org))])
     try:
-        scored = vector_store.similarity_search_with_score(query, k=k, filter=flt)
-        docs = [d for d, score in scored if score >= RELEVANCE_FLOOR]
-        if scored and not docs:
-            print(f"  retrieval: nothing above the relevance floor "
-                  f"(best {scored[0][1]:.3f} < {RELEVANCE_FLOOR}) - no evidence offered")
+        # No relevance floor here. This is called with SUMMARIES, not the draft,
+        # and a summary scores far lower against the same corpus - measured at
+        # 0.70-0.80 where the draft scores 0.93+. Applying the draft-tuned floor
+        # here starved every intermediate agent of evidence. The floor lives on
+        # the draft-query path in structured_issues_agent, which is where a
+        # false finding actually gets created.
+        docs = vector_store.similarity_search(query, k=k, filter=flt)
     except Exception as e:
         print("retrieve error:", e)
         return "No relevant past statements found."

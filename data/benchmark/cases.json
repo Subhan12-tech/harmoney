@@ -1,0 +1,1338 @@
+[
+ {
+  "id": "001",
+  "domain": "finance",
+  "kind": "qualifier_flip",
+  "expect": "issues",
+  "must_flag": [
+   "confident"
+  ],
+  "history": [
+   "CARDON GROUP - QUARTERLY RESULTS RELEASE (full year 2025) (fictional sample)\n\nCardon Group reported revenue of $96.5 million for the full year of 2025.\nManagement described the outlook as cautious.\nNo change to previously stated guidance was announced.",
+   "CARDON GROUP - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was revenue in the full year?\nA: $96.5 million.\n\nQ: How would you characterise the outlook?\nA: It remains cautious. We have not revised that position."
+  ],
+  "draft": "DRAFT QUARTERLY RESULTS RELEASE\n\nCardon Group confirmed revenue of $96.5 million for the full year. The outlook is now confident, consistent with what we have said throughout."
+ },
+ {
+  "id": "002",
+  "domain": "legal",
+  "kind": "qualifier_flip",
+  "expect": "issues",
+  "must_flag": [
+   "cleared"
+  ],
+  "history": [
+   "HARROW & VANCE LLP - LITIGATION STATUS DISCLOSURE (full year 2025) (fictional sample)\n\nHarrow & Vance LLP reported open matters of 41 matters for the full year of 2025.\nManagement described the regulatory position as under review.\nNo change to previously stated guidance was announced.",
+   "HARROW & VANCE LLP - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was open matters in the full year?\nA: 41 matters.\n\nQ: How would you characterise the regulatory position?\nA: It remains under review. We have not revised that position."
+  ],
+  "draft": "DRAFT LITIGATION STATUS DISCLOSURE\n\nHarrow & Vance LLP confirmed open matters of 41 matters for the full year. The regulatory position is now cleared, consistent with what we have said throughout."
+ },
+ {
+  "id": "003",
+  "domain": "healthcare",
+  "kind": "timeline_slip",
+  "expect": "issues",
+  "must_flag": [
+   "revised upward"
+  ],
+  "history": [
+   "RIVERBEND MEDICAL GROUP - REGULATORY SUBMISSION NOTE (third quarter 2025) (fictional sample)\n\nRiverbend Medical Group reported primary endpoint response of 61.0% for the third quarter of 2025.\nManagement described the trial status as ongoing.\nNo change to previously stated guidance was announced.",
+   "RIVERBEND MEDICAL GROUP - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was primary endpoint response in the third quarter?\nA: 61.0%.\n\nQ: How would you characterise the trial status?\nA: It remains ongoing. We have not revised that position."
+  ],
+  "draft": "DRAFT REGULATORY SUBMISSION NOTE\n\nRiverbend Medical Group reported primary endpoint response of 61.0%. Guidance has been revised upward from the previously stated level, reflecting the same approach described all year."
+ },
+ {
+  "id": "004",
+  "domain": "energy",
+  "kind": "capability_claim",
+  "expect": "issues",
+  "must_flag": [
+   "committed"
+  ],
+  "history": [
+   "PANHANDLE RESOURCES - PRODUCTION DISCLOSURE (full year 2026) (fictional sample)\n\nPanhandle Resources reported emissions intensity of 18.4 kg CO2e per barrel for the full year of 2026.\nManagement described the target as aspirational.\nNo change to previously stated guidance was announced.",
+   "PANHANDLE RESOURCES - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was emissions intensity in the full year?\nA: 18.4 kg CO2e per barrel.\n\nQ: How would you characterise the target?\nA: It remains aspirational. We have not revised that position."
+  ],
+  "draft": "DRAFT PRODUCTION DISCLOSURE\n\nPanhandle Resources reported emissions intensity of 18.4 kg CO2e per barrel for the full year. The target is committed and has been for some time."
+ },
+ {
+  "id": "005",
+  "domain": "manufacturing",
+  "kind": "magnitude_drift",
+  "expect": "issues",
+  "must_flag": [
+   "0.3%"
+  ],
+  "history": [
+   "HALDEN INDUSTRIAL - OPERATIONS BRIEFING (second quarter 2025) (fictional sample)\n\nHalden Industrial reported defect rate of 0.3% for the second quarter of 2025.\nManagement described the expansion as under evaluation.\nNo change to previously stated guidance was announced.",
+   "HALDEN INDUSTRIAL - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was defect rate in the second quarter?\nA: 0.3%.\n\nQ: How would you characterise the expansion?\nA: It remains under evaluation. We have not revised that position."
+  ],
+  "draft": "DRAFT OPERATIONS BRIEFING\n\nHalden Industrial recorded defect rate of approximately 0.3% in the second quarter, broadly in line with prior disclosure."
+ },
+ {
+  "id": "006",
+  "domain": "technology",
+  "kind": "capability_claim",
+  "expect": "issues",
+  "must_flag": [
+   "operated"
+  ],
+  "history": [
+   "LUMEN DATA - INVESTOR BRIEFING (third quarter 2026) (fictional sample)\n\nLumen Data reported uptime of 99.5% for the third quarter of 2026.\nManagement described the region as not operated.\nNo change to previously stated guidance was announced.",
+   "LUMEN DATA - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was uptime in the third quarter?\nA: 99.5%.\n\nQ: How would you characterise the region?\nA: It remains not operated. We have not revised that position."
+  ],
+  "draft": "DRAFT INVESTOR BRIEFING\n\nLumen Data reported uptime of 99.5% for the third quarter. The region is operated and has been for some time."
+ },
+ {
+  "id": "007",
+  "domain": "insurance",
+  "kind": "numeric_contradiction",
+  "expect": "issues",
+  "must_flag": [
+   "46.4%"
+  ],
+  "history": [
+   "BELLHAVEN ASSURANCE - UNDERWRITING UPDATE (third quarter 2025) (fictional sample)\n\nBellhaven Assurance reported combined ratio of 103.2% for the third quarter of 2025.\nManagement described the reserve position as strengthening.\nNo change to previously stated guidance was announced.",
+   "BELLHAVEN ASSURANCE - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was combined ratio in the third quarter?\nA: 103.2%.\n\nQ: How would you characterise the reserve position?\nA: It remains strengthening. We have not revised that position."
+  ],
+  "draft": "DRAFT UNDERWRITING UPDATE\n\nBellhaven Assurance today reported combined ratio of 46.4% for the third quarter of 2025, and reaffirmed its outlook."
+ },
+ {
+  "id": "008",
+  "domain": "finance",
+  "kind": "timeline_slip",
+  "expect": "issues",
+  "must_flag": [
+   "revised upward"
+  ],
+  "history": [
+   "NORTHGATE CAPITAL - QUARTERLY RESULTS RELEASE (second quarter 2025) (fictional sample)\n\nNorthgate Capital reported net interest margin of 2.9% for the second quarter of 2025.\nManagement described the margin trend as compressing.\nNo change to previously stated guidance was announced.",
+   "NORTHGATE CAPITAL - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was net interest margin in the second quarter?\nA: 2.9%.\n\nQ: How would you characterise the margin trend?\nA: It remains compressing. We have not revised that position."
+  ],
+  "draft": "DRAFT QUARTERLY RESULTS RELEASE\n\nNorthgate Capital reported net interest margin of 2.9%. Guidance has been revised upward from the previously stated level, reflecting the same approach described all year."
+ },
+ {
+  "id": "009",
+  "domain": "legal",
+  "kind": "capability_claim",
+  "expect": "issues",
+  "must_flag": [
+   "immaterial"
+  ],
+  "history": [
+   "STANTON REED - REGULATORY FILING NOTE (first quarter 2025) (fictional sample)\n\nStanton Reed reported provision recognised of $4.2 million for the first quarter of 2025.\nManagement described the exposure as material.\nNo change to previously stated guidance was announced.",
+   "STANTON REED - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was provision recognised in the first quarter?\nA: $4.2 million.\n\nQ: How would you characterise the exposure?\nA: It remains material. We have not revised that position."
+  ],
+  "draft": "DRAFT REGULATORY FILING NOTE\n\nStanton Reed reported provision recognised of $4.2 million for the first quarter. The exposure is immaterial and has been for some time."
+ },
+ {
+  "id": "010",
+  "domain": "healthcare",
+  "kind": "numeric_contradiction",
+  "expect": "issues",
+  "must_flag": [
+   "27.4%"
+  ],
+  "history": [
+   "CALDERON HEALTH - CLINICAL UPDATE (second quarter 2026) (fictional sample)\n\nCalderon Health reported primary endpoint response of 61.0% for the second quarter of 2026.\nManagement described the safety profile as under evaluation.\nNo change to previously stated guidance was announced.",
+   "CALDERON HEALTH - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was primary endpoint response in the second quarter?\nA: 61.0%.\n\nQ: How would you characterise the safety profile?\nA: It remains under evaluation. We have not revised that position."
+  ],
+  "draft": "DRAFT CLINICAL UPDATE\n\nCalderon Health today reported primary endpoint response of 27.4% for the second quarter of 2026, and reaffirmed its outlook."
+ },
+ {
+  "id": "011",
+  "domain": "energy",
+  "kind": "qualifier_flip",
+  "expect": "issues",
+  "must_flag": [
+   "operational"
+  ],
+  "history": [
+   "TALLOW GRID - PRODUCTION DISCLOSURE (full year 2026) (fictional sample)\n\nTallow Grid reported daily production of 96000 barrels per day for the full year of 2026.\nManagement described the transition plan as in development.\nNo change to previously stated guidance was announced.",
+   "TALLOW GRID - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was daily production in the full year?\nA: 96000 barrels per day.\n\nQ: How would you characterise the transition plan?\nA: It remains in development. We have not revised that position."
+  ],
+  "draft": "DRAFT PRODUCTION DISCLOSURE\n\nTallow Grid confirmed daily production of 96000 barrels per day for the full year. The transition plan is now operational, consistent with what we have said throughout."
+ },
+ {
+  "id": "012",
+  "domain": "manufacturing",
+  "kind": "numeric_contradiction",
+  "expect": "issues",
+  "must_flag": [
+   "39375.0 units"
+  ],
+  "history": [
+   "HALDEN INDUSTRIAL - SUPPLY CHAIN UPDATE (full year 2026) (fictional sample)\n\nHalden Industrial reported units shipped of 87500 units for the full year of 2026.\nManagement described the capacity as constrained.\nNo change to previously stated guidance was announced.",
+   "HALDEN INDUSTRIAL - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was units shipped in the full year?\nA: 87500 units.\n\nQ: How would you characterise the capacity?\nA: It remains constrained. We have not revised that position."
+  ],
+  "draft": "DRAFT SUPPLY CHAIN UPDATE\n\nHalden Industrial today reported units shipped of 39375.0 units for the full year of 2026, and reaffirmed its outlook."
+ },
+ {
+  "id": "013",
+  "domain": "technology",
+  "kind": "absent_topic",
+  "expect": "none",
+  "must_flag": [],
+  "history": [
+   "LUMEN DATA - PRODUCT UPDATE (third quarter 2025) (fictional sample)\n\nLumen Data reported monthly active users of 18.6 million for the third quarter of 2025.\nManagement described the release status as in beta.\nNo change to previously stated guidance was announced.",
+   "LUMEN DATA - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was monthly active users in the third quarter?\nA: 18.6 million.\n\nQ: How would you characterise the release status?\nA: It remains in beta. We have not revised that position."
+  ],
+  "draft": "DRAFT ANNOUNCEMENT\n\nLumen Data today announced a partnership with Winsley Advisory to develop a joint training programme for graduate recruits. The programme begins next year. Financial terms were not disclosed."
+ },
+ {
+  "id": "014",
+  "domain": "insurance",
+  "kind": "magnitude_drift",
+  "expect": "issues",
+  "must_flag": [
+   "$54.1 million"
+  ],
+  "history": [
+   "BELLHAVEN ASSURANCE - RESERVE DISCLOSURE (first quarter 2025) (fictional sample)\n\nBellhaven Assurance reported reserve release of $48.3 million for the first quarter of 2025.\nManagement described the rate environment as softening.\nNo change to previously stated guidance was announced.",
+   "BELLHAVEN ASSURANCE - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was reserve release in the first quarter?\nA: $48.3 million.\n\nQ: How would you characterise the rate environment?\nA: It remains softening. We have not revised that position."
+  ],
+  "draft": "DRAFT RESERVE DISCLOSURE\n\nBellhaven Assurance recorded reserve release of approximately $54.1 million in the first quarter, broadly in line with prior disclosure."
+ },
+ {
+  "id": "015",
+  "domain": "finance",
+  "kind": "qualifier_flip",
+  "expect": "issues",
+  "must_flag": [
+   "confident"
+  ],
+  "history": [
+   "NORTHGATE CAPITAL - EARNINGS CALL TRANSCRIPT (second quarter 2026) (fictional sample)\n\nNorthgate Capital reported assets under management of $14.2 billion for the second quarter of 2026.\nManagement described the outlook as cautious.\nNo change to previously stated guidance was announced.",
+   "NORTHGATE CAPITAL - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was assets under management in the second quarter?\nA: $14.2 billion.\n\nQ: How would you characterise the outlook?\nA: It remains cautious. We have not revised that position."
+  ],
+  "draft": "DRAFT EARNINGS CALL TRANSCRIPT\n\nNorthgate Capital confirmed assets under management of $14.2 billion for the second quarter. The outlook is now confident, consistent with what we have said throughout."
+ },
+ {
+  "id": "016",
+  "domain": "legal",
+  "kind": "consistent",
+  "expect": "none",
+  "must_flag": [],
+  "history": [
+   "HARROW & VANCE LLP - REGULATORY FILING NOTE (third quarter 2026) (fictional sample)\n\nHarrow & Vance LLP reported provision recognised of $0.9 million for the third quarter of 2026.\nManagement described the exposure as material.\nNo change to previously stated guidance was announced.",
+   "HARROW & VANCE LLP - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was provision recognised in the third quarter?\nA: $0.9 million.\n\nQ: How would you characterise the exposure?\nA: It remains material. We have not revised that position."
+  ],
+  "draft": "DRAFT REGULATORY FILING NOTE\n\nHarrow & Vance LLP reported provision recognised of $0.9 million for the third quarter of 2026. The exposure remains material, unchanged from prior disclosure."
+ },
+ {
+  "id": "017",
+  "domain": "healthcare",
+  "kind": "qualifier_flip",
+  "expect": "issues",
+  "must_flag": [
+   "approved"
+  ],
+  "history": [
+   "SABLE CLINICAL - REGULATORY SUBMISSION NOTE (first quarter 2025) (fictional sample)\n\nSable Clinical reported primary endpoint response of 78.2% for the first quarter of 2025.\nManagement described the approval position as not yet submitted.\nNo change to previously stated guidance was announced.",
+   "SABLE CLINICAL - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was primary endpoint response in the first quarter?\nA: 78.2%.\n\nQ: How would you characterise the approval position?\nA: It remains not yet submitted. We have not revised that position."
+  ],
+  "draft": "DRAFT REGULATORY SUBMISSION NOTE\n\nSable Clinical confirmed primary endpoint response of 78.2% for the first quarter. The approval position is now approved, consistent with what we have said throughout."
+ },
+ {
+  "id": "018",
+  "domain": "energy",
+  "kind": "consistent",
+  "expect": "none",
+  "must_flag": [],
+  "history": [
+   "PANHANDLE RESOURCES - PRODUCTION DISCLOSURE (third quarter 2026) (fictional sample)\n\nPanhandle Resources reported emissions intensity of 18.4 kg CO2e per barrel for the third quarter of 2026.\nManagement described the transition plan as in development.\nNo change to previously stated guidance was announced.",
+   "PANHANDLE RESOURCES - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was emissions intensity in the third quarter?\nA: 18.4 kg CO2e per barrel.\n\nQ: How would you characterise the transition plan?\nA: It remains in development. We have not revised that position."
+  ],
+  "draft": "DRAFT PRODUCTION DISCLOSURE\n\nPanhandle Resources reported emissions intensity of 18.4 kg CO2e per barrel for the third quarter of 2026. The transition plan remains in development, unchanged from prior disclosure."
+ },
+ {
+  "id": "019",
+  "domain": "manufacturing",
+  "kind": "magnitude_drift",
+  "expect": "issues",
+  "must_flag": [
+   "71.9%"
+  ],
+  "history": [
+   "HALDEN INDUSTRIAL - ANNUAL PRODUCTION NOTE (third quarter 2025) (fictional sample)\n\nHalden Industrial reported plant utilisation of 64.2% for the third quarter of 2025.\nManagement described the capacity as constrained.\nNo change to previously stated guidance was announced.",
+   "HALDEN INDUSTRIAL - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was plant utilisation in the third quarter?\nA: 64.2%.\n\nQ: How would you characterise the capacity?\nA: It remains constrained. We have not revised that position."
+  ],
+  "draft": "DRAFT ANNUAL PRODUCTION NOTE\n\nHalden Industrial recorded plant utilisation of approximately 71.9% in the third quarter, broadly in line with prior disclosure."
+ },
+ {
+  "id": "020",
+  "domain": "technology",
+  "kind": "magnitude_drift",
+  "expect": "issues",
+  "must_flag": [
+   "4.7 million"
+  ],
+  "history": [
+   "VERDANT SYSTEMS - INVESTOR BRIEFING (second quarter 2026) (fictional sample)\n\nVerdant Systems reported monthly active users of 4.2 million for the second quarter of 2026.\nManagement described the release status as in beta.\nNo change to previously stated guidance was announced.",
+   "VERDANT SYSTEMS - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was monthly active users in the second quarter?\nA: 4.2 million.\n\nQ: How would you characterise the release status?\nA: It remains in beta. We have not revised that position."
+  ],
+  "draft": "DRAFT INVESTOR BRIEFING\n\nVerdant Systems recorded monthly active users of approximately 4.7 million in the second quarter, broadly in line with prior disclosure."
+ },
+ {
+  "id": "021",
+  "domain": "insurance",
+  "kind": "consistent",
+  "expect": "none",
+  "must_flag": [],
+  "history": [
+   "MARCHWOOD MUTUAL - UNDERWRITING UPDATE (third quarter 2025) (fictional sample)\n\nMarchwood Mutual reported gross written premium of $215.5 million for the third quarter of 2025.\nManagement described the rate environment as softening.\nNo change to previously stated guidance was announced.",
+   "MARCHWOOD MUTUAL - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was gross written premium in the third quarter?\nA: $215.5 million.\n\nQ: How would you characterise the rate environment?\nA: It remains softening. We have not revised that position."
+  ],
+  "draft": "DRAFT UNDERWRITING UPDATE\n\nMarchwood Mutual reported gross written premium of $215.5 million for the third quarter of 2025. The rate environment remains softening, unchanged from prior disclosure."
+ },
+ {
+  "id": "022",
+  "domain": "finance",
+  "kind": "numeric_contradiction",
+  "expect": "issues",
+  "must_flag": [
+   "1.3%"
+  ],
+  "history": [
+   "ASHWELL HOLDINGS - QUARTERLY RESULTS RELEASE (full year 2026) (fictional sample)\n\nAshwell Holdings reported net interest margin of 2.9% for the full year of 2026.\nManagement described the margin trend as compressing.\nNo change to previously stated guidance was announced.",
+   "ASHWELL HOLDINGS - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was net interest margin in the full year?\nA: 2.9%.\n\nQ: How would you characterise the margin trend?\nA: It remains compressing. We have not revised that position."
+  ],
+  "draft": "DRAFT QUARTERLY RESULTS RELEASE\n\nAshwell Holdings today reported net interest margin of 1.3% for the full year of 2026, and reaffirmed its outlook."
+ },
+ {
+  "id": "023",
+  "domain": "legal",
+  "kind": "consistent",
+  "expect": "none",
+  "must_flag": [],
+  "history": [
+   "HARROW & VANCE LLP - REGULATORY FILING NOTE (first quarter 2026) (fictional sample)\n\nHarrow & Vance LLP reported settlement amount of $18.0 million for the first quarter of 2026.\nManagement described the case outlook as unresolved.\nNo change to previously stated guidance was announced.",
+   "HARROW & VANCE LLP - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was settlement amount in the first quarter?\nA: $18.0 million.\n\nQ: How would you characterise the case outlook?\nA: It remains unresolved. We have not revised that position."
+  ],
+  "draft": "DRAFT REGULATORY FILING NOTE\n\nHarrow & Vance LLP reported settlement amount of $18.0 million for the first quarter of 2026. The case outlook remains unresolved, unchanged from prior disclosure."
+ },
+ {
+  "id": "024",
+  "domain": "healthcare",
+  "kind": "consistent",
+  "expect": "none",
+  "must_flag": [],
+  "history": [
+   "SABLE CLINICAL - REGULATORY SUBMISSION NOTE (third quarter 2026) (fictional sample)\n\nSable Clinical reported primary endpoint response of 44.5% for the third quarter of 2026.\nManagement described the trial status as ongoing.\nNo change to previously stated guidance was announced.",
+   "SABLE CLINICAL - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was primary endpoint response in the third quarter?\nA: 44.5%.\n\nQ: How would you characterise the trial status?\nA: It remains ongoing. We have not revised that position."
+  ],
+  "draft": "DRAFT REGULATORY SUBMISSION NOTE\n\nSable Clinical reported primary endpoint response of 44.5% for the third quarter of 2026. The trial status remains ongoing, unchanged from prior disclosure."
+ },
+ {
+  "id": "025",
+  "domain": "energy",
+  "kind": "numeric_contradiction",
+  "expect": "issues",
+  "must_flag": [
+   "11.3 kg CO2e per barrel"
+  ],
+  "history": [
+   "KESTREL ENERGY - SUSTAINABILITY REPORT (full year 2025) (fictional sample)\n\nKestrel Energy reported emissions intensity of 25.1 kg CO2e per barrel for the full year of 2025.\nManagement described the target as aspirational.\nNo change to previously stated guidance was announced.",
+   "KESTREL ENERGY - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was emissions intensity in the full year?\nA: 25.1 kg CO2e per barrel.\n\nQ: How would you characterise the target?\nA: It remains aspirational. We have not revised that position."
+  ],
+  "draft": "DRAFT SUSTAINABILITY REPORT\n\nKestrel Energy today reported emissions intensity of 11.3 kg CO2e per barrel for the full year of 2025, and reaffirmed its outlook."
+ },
+ {
+  "id": "026",
+  "domain": "manufacturing",
+  "kind": "consistent",
+  "expect": "none",
+  "must_flag": [],
+  "history": [
+   "FERROUS DYNAMICS - OPERATIONS BRIEFING (second quarter 2025) (fictional sample)\n\nFerrous Dynamics reported units shipped of 412000 units for the second quarter of 2025.\nManagement described the supplier position as single-sourced.\nNo change to previously stated guidance was announced.",
+   "FERROUS DYNAMICS - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was units shipped in the second quarter?\nA: 412000 units.\n\nQ: How would you characterise the supplier position?\nA: It remains single-sourced. We have not revised that position."
+  ],
+  "draft": "DRAFT OPERATIONS BRIEFING\n\nFerrous Dynamics reported units shipped of 412000 units for the second quarter of 2025. The supplier position remains single-sourced, unchanged from prior disclosure."
+ },
+ {
+  "id": "027",
+  "domain": "technology",
+  "kind": "numeric_contradiction",
+  "expect": "issues",
+  "must_flag": [
+   "39.4%"
+  ],
+  "history": [
+   "VERDANT SYSTEMS - INVESTOR BRIEFING (second quarter 2026) (fictional sample)\n\nVerdant Systems reported gross retention of 87.5% for the second quarter of 2026.\nManagement described the region as not operated.\nNo change to previously stated guidance was announced.",
+   "VERDANT SYSTEMS - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was gross retention in the second quarter?\nA: 87.5%.\n\nQ: How would you characterise the region?\nA: It remains not operated. We have not revised that position."
+  ],
+  "draft": "DRAFT INVESTOR BRIEFING\n\nVerdant Systems today reported gross retention of 39.4% for the second quarter of 2026, and reaffirmed its outlook."
+ },
+ {
+  "id": "028",
+  "domain": "insurance",
+  "kind": "qualifier_flip",
+  "expect": "issues",
+  "must_flag": [
+   "normalised"
+  ],
+  "history": [
+   "MARCHWOOD MUTUAL - UNDERWRITING UPDATE (first quarter 2025) (fictional sample)\n\nMarchwood Mutual reported combined ratio of 91.8% for the first quarter of 2025.\nManagement described the catastrophe exposure as elevated.\nNo change to previously stated guidance was announced.",
+   "MARCHWOOD MUTUAL - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was combined ratio in the first quarter?\nA: 91.8%.\n\nQ: How would you characterise the catastrophe exposure?\nA: It remains elevated. We have not revised that position."
+  ],
+  "draft": "DRAFT UNDERWRITING UPDATE\n\nMarchwood Mutual confirmed combined ratio of 91.8% for the first quarter. The catastrophe exposure is now normalised, consistent with what we have said throughout."
+ },
+ {
+  "id": "029",
+  "domain": "finance",
+  "kind": "numeric_contradiction",
+  "expect": "issues",
+  "must_flag": [
+   "103.5%"
+  ],
+  "history": [
+   "CARDON GROUP - QUARTERLY RESULTS RELEASE (full year 2025) (fictional sample)\n\nCardon Group reported cost-to-income ratio of 49.3% for the full year of 2025.\nManagement described the outlook as cautious.\nNo change to previously stated guidance was announced.",
+   "CARDON GROUP - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was cost-to-income ratio in the full year?\nA: 49.3%.\n\nQ: How would you characterise the outlook?\nA: It remains cautious. We have not revised that position."
+  ],
+  "draft": "DRAFT QUARTERLY RESULTS RELEASE\n\nCardon Group today reported cost-to-income ratio of 103.5% for the full year of 2025, and reaffirmed its outlook."
+ },
+ {
+  "id": "030",
+  "domain": "legal",
+  "kind": "timeline_slip",
+  "expect": "issues",
+  "must_flag": [
+   "revised upward"
+  ],
+  "history": [
+   "STANTON REED - REGULATORY FILING NOTE (full year 2025) (fictional sample)\n\nStanton Reed reported settlement amount of $2.3 million for the full year of 2025.\nManagement described the exposure as material.\nNo change to previously stated guidance was announced.",
+   "STANTON REED - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was settlement amount in the full year?\nA: $2.3 million.\n\nQ: How would you characterise the exposure?\nA: It remains material. We have not revised that position."
+  ],
+  "draft": "DRAFT REGULATORY FILING NOTE\n\nStanton Reed reported settlement amount of $2.3 million. Guidance has been revised upward from the previously stated level, reflecting the same approach described all year."
+ },
+ {
+  "id": "031",
+  "domain": "healthcare",
+  "kind": "absent_topic",
+  "expect": "none",
+  "must_flag": [],
+  "history": [
+   "CALDERON HEALTH - TRIAL RESULTS SUMMARY (full year 2025) (fictional sample)\n\nCalderon Health reported serious adverse events of 12 events for the full year of 2025.\nManagement described the safety profile as under evaluation.\nNo change to previously stated guidance was announced.",
+   "CALDERON HEALTH - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was serious adverse events in the full year?\nA: 12 events.\n\nQ: How would you characterise the safety profile?\nA: It remains under evaluation. We have not revised that position."
+  ],
+  "draft": "DRAFT ANNOUNCEMENT\n\nCalderon Health today announced a partnership with Winsley Advisory to develop a joint training programme for graduate recruits. The programme begins next year. Financial terms were not disclosed."
+ },
+ {
+  "id": "032",
+  "domain": "energy",
+  "kind": "magnitude_drift",
+  "expect": "issues",
+  "must_flag": [
+   "380.8 million barrels"
+  ],
+  "history": [
+   "TALLOW GRID - PRODUCTION DISCLOSURE (third quarter 2026) (fictional sample)\n\nTallow Grid reported proven reserves of 340.0 million barrels for the third quarter of 2026.\nManagement described the transition plan as in development.\nNo change to previously stated guidance was announced.",
+   "TALLOW GRID - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was proven reserves in the third quarter?\nA: 340.0 million barrels.\n\nQ: How would you characterise the transition plan?\nA: It remains in development. We have not revised that position."
+  ],
+  "draft": "DRAFT PRODUCTION DISCLOSURE\n\nTallow Grid recorded proven reserves of approximately 380.8 million barrels in the third quarter, broadly in line with prior disclosure."
+ },
+ {
+  "id": "033",
+  "domain": "manufacturing",
+  "kind": "consistent",
+  "expect": "none",
+  "must_flag": [],
+  "history": [
+   "HALDEN INDUSTRIAL - ANNUAL PRODUCTION NOTE (second quarter 2026) (fictional sample)\n\nHalden Industrial reported defect rate of 2.1% for the second quarter of 2026.\nManagement described the capacity as constrained.\nNo change to previously stated guidance was announced.",
+   "HALDEN INDUSTRIAL - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was defect rate in the second quarter?\nA: 2.1%.\n\nQ: How would you characterise the capacity?\nA: It remains constrained. We have not revised that position."
+  ],
+  "draft": "DRAFT ANNUAL PRODUCTION NOTE\n\nHalden Industrial reported defect rate of 2.1% for the second quarter of 2026. The capacity remains constrained, unchanged from prior disclosure."
+ },
+ {
+  "id": "034",
+  "domain": "technology",
+  "kind": "absent_topic",
+  "expect": "none",
+  "must_flag": [],
+  "history": [
+   "ORBIS COMPUTE - PRODUCT UPDATE (first quarter 2025) (fictional sample)\n\nOrbis Compute reported uptime of 99.5% for the first quarter of 2025.\nManagement described the certification as not held.\nNo change to previously stated guidance was announced.",
+   "ORBIS COMPUTE - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was uptime in the first quarter?\nA: 99.5%.\n\nQ: How would you characterise the certification?\nA: It remains not held. We have not revised that position."
+  ],
+  "draft": "DRAFT ANNOUNCEMENT\n\nOrbis Compute today announced a partnership with Winsley Advisory to develop a joint training programme for graduate recruits. The programme begins next year. Financial terms were not disclosed."
+ },
+ {
+  "id": "035",
+  "domain": "insurance",
+  "kind": "capability_claim",
+  "expect": "issues",
+  "must_flag": [
+   "releasing"
+  ],
+  "history": [
+   "MARCHWOOD MUTUAL - POLICYHOLDER REPORT (first quarter 2026) (fictional sample)\n\nMarchwood Mutual reported combined ratio of 97.5% for the first quarter of 2026.\nManagement described the reserve position as strengthening.\nNo change to previously stated guidance was announced.",
+   "MARCHWOOD MUTUAL - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was combined ratio in the first quarter?\nA: 97.5%.\n\nQ: How would you characterise the reserve position?\nA: It remains strengthening. We have not revised that position."
+  ],
+  "draft": "DRAFT POLICYHOLDER REPORT\n\nMarchwood Mutual reported combined ratio of 97.5% for the first quarter. The reserve position is releasing and has been for some time."
+ },
+ {
+  "id": "036",
+  "domain": "finance",
+  "kind": "timeline_slip",
+  "expect": "issues",
+  "must_flag": [
+   "revised upward"
+  ],
+  "history": [
+   "CARDON GROUP - EARNINGS CALL TRANSCRIPT (full year 2025) (fictional sample)\n\nCardon Group reported assets under management of $14.2 billion for the full year of 2025.\nManagement described the growth as mid-single-digit.\nNo change to previously stated guidance was announced.",
+   "CARDON GROUP - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was assets under management in the full year?\nA: $14.2 billion.\n\nQ: How would you characterise the growth?\nA: It remains mid-single-digit. We have not revised that position."
+  ],
+  "draft": "DRAFT EARNINGS CALL TRANSCRIPT\n\nCardon Group reported assets under management of $14.2 billion. Guidance has been revised upward from the previously stated level, reflecting the same approach described all year."
+ },
+ {
+  "id": "037",
+  "domain": "legal",
+  "kind": "absent_topic",
+  "expect": "none",
+  "must_flag": [],
+  "history": [
+   "DELOIT MERCER - COUNSEL BRIEFING (first quarter 2025) (fictional sample)\n\nDeloit Mercer reported settlement amount of $2.3 million for the first quarter of 2025.\nManagement described the case outlook as unresolved.\nNo change to previously stated guidance was announced.",
+   "DELOIT MERCER - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was settlement amount in the first quarter?\nA: $2.3 million.\n\nQ: How would you characterise the case outlook?\nA: It remains unresolved. We have not revised that position."
+  ],
+  "draft": "DRAFT ANNOUNCEMENT\n\nDeloit Mercer today announced a partnership with Winsley Advisory to develop a joint training programme for graduate recruits. The programme begins next year. Financial terms were not disclosed."
+ },
+ {
+  "id": "038",
+  "domain": "healthcare",
+  "kind": "timeline_slip",
+  "expect": "issues",
+  "must_flag": [
+   "revised upward"
+  ],
+  "history": [
+   "CALDERON HEALTH - TRIAL RESULTS SUMMARY (first quarter 2025) (fictional sample)\n\nCalderon Health reported serious adverse events of 3 events for the first quarter of 2025.\nManagement described the safety profile as under evaluation.\nNo change to previously stated guidance was announced.",
+   "CALDERON HEALTH - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was serious adverse events in the first quarter?\nA: 3 events.\n\nQ: How would you characterise the safety profile?\nA: It remains under evaluation. We have not revised that position."
+  ],
+  "draft": "DRAFT TRIAL RESULTS SUMMARY\n\nCalderon Health reported serious adverse events of 3 events. Guidance has been revised upward from the previously stated level, reflecting the same approach described all year."
+ },
+ {
+  "id": "039",
+  "domain": "energy",
+  "kind": "absent_topic",
+  "expect": "none",
+  "must_flag": [],
+  "history": [
+   "KESTREL ENERGY - OPERATIONS UPDATE (full year 2026) (fictional sample)\n\nKestrel Energy reported emissions intensity of 18.4 kg CO2e per barrel for the full year of 2026.\nManagement described the transition plan as in development.\nNo change to previously stated guidance was announced.",
+   "KESTREL ENERGY - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was emissions intensity in the full year?\nA: 18.4 kg CO2e per barrel.\n\nQ: How would you characterise the transition plan?\nA: It remains in development. We have not revised that position."
+  ],
+  "draft": "DRAFT ANNOUNCEMENT\n\nKestrel Energy today announced a partnership with Winsley Advisory to develop a joint training programme for graduate recruits. The programme begins next year. Financial terms were not disclosed."
+ },
+ {
+  "id": "040",
+  "domain": "manufacturing",
+  "kind": "qualifier_flip",
+  "expect": "issues",
+  "must_flag": [
+   "approved"
+  ],
+  "history": [
+   "CORTEZ MANUFACTURING - ANNUAL PRODUCTION NOTE (first quarter 2025) (fictional sample)\n\nCortez Manufacturing reported units shipped of 412000 units for the first quarter of 2025.\nManagement described the expansion as under evaluation.\nNo change to previously stated guidance was announced.",
+   "CORTEZ MANUFACTURING - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was units shipped in the first quarter?\nA: 412000 units.\n\nQ: How would you characterise the expansion?\nA: It remains under evaluation. We have not revised that position."
+  ],
+  "draft": "DRAFT ANNUAL PRODUCTION NOTE\n\nCortez Manufacturing confirmed units shipped of 412000 units for the first quarter. The expansion is now approved, consistent with what we have said throughout."
+ },
+ {
+  "id": "041",
+  "domain": "technology",
+  "kind": "numeric_contradiction",
+  "expect": "issues",
+  "must_flag": [
+   "160.0%"
+  ],
+  "history": [
+   "LUMEN DATA - PRODUCT UPDATE (third quarter 2026) (fictional sample)\n\nLumen Data reported uptime of 99.99% for the third quarter of 2026.\nManagement described the release status as in beta.\nNo change to previously stated guidance was announced.",
+   "LUMEN DATA - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was uptime in the third quarter?\nA: 99.99%.\n\nQ: How would you characterise the release status?\nA: It remains in beta. We have not revised that position."
+  ],
+  "draft": "DRAFT PRODUCT UPDATE\n\nLumen Data today reported uptime of 160.0% for the third quarter of 2026, and reaffirmed its outlook."
+ },
+ {
+  "id": "042",
+  "domain": "insurance",
+  "kind": "capability_claim",
+  "expect": "issues",
+  "must_flag": [
+   "releasing"
+  ],
+  "history": [
+   "BELLHAVEN ASSURANCE - UNDERWRITING UPDATE (first quarter 2025) (fictional sample)\n\nBellhaven Assurance reported gross written premium of $215.5 million for the first quarter of 2025.\nManagement described the reserve position as strengthening.\nNo change to previously stated guidance was announced.",
+   "BELLHAVEN ASSURANCE - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was gross written premium in the first quarter?\nA: $215.5 million.\n\nQ: How would you characterise the reserve position?\nA: It remains strengthening. We have not revised that position."
+  ],
+  "draft": "DRAFT UNDERWRITING UPDATE\n\nBellhaven Assurance reported gross written premium of $215.5 million for the first quarter. The reserve position is releasing and has been for some time."
+ },
+ {
+  "id": "043",
+  "domain": "finance",
+  "kind": "qualifier_flip",
+  "expect": "issues",
+  "must_flag": [
+   "confident"
+  ],
+  "history": [
+   "ASHWELL HOLDINGS - EARNINGS CALL TRANSCRIPT (full year 2026) (fictional sample)\n\nAshwell Holdings reported assets under management of $14.2 billion for the full year of 2026.\nManagement described the outlook as cautious.\nNo change to previously stated guidance was announced.",
+   "ASHWELL HOLDINGS - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was assets under management in the full year?\nA: $14.2 billion.\n\nQ: How would you characterise the outlook?\nA: It remains cautious. We have not revised that position."
+  ],
+  "draft": "DRAFT EARNINGS CALL TRANSCRIPT\n\nAshwell Holdings confirmed assets under management of $14.2 billion for the full year. The outlook is now confident, consistent with what we have said throughout."
+ },
+ {
+  "id": "044",
+  "domain": "legal",
+  "kind": "absent_topic",
+  "expect": "none",
+  "must_flag": [],
+  "history": [
+   "STANTON REED - REGULATORY FILING NOTE (first quarter 2025) (fictional sample)\n\nStanton Reed reported provision recognised of $11.8 million for the first quarter of 2025.\nManagement described the case outlook as unresolved.\nNo change to previously stated guidance was announced.",
+   "STANTON REED - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was provision recognised in the first quarter?\nA: $11.8 million.\n\nQ: How would you characterise the case outlook?\nA: It remains unresolved. We have not revised that position."
+  ],
+  "draft": "DRAFT ANNOUNCEMENT\n\nStanton Reed today announced a partnership with Winsley Advisory to develop a joint training programme for graduate recruits. The programme begins next year. Financial terms were not disclosed."
+ },
+ {
+  "id": "045",
+  "domain": "healthcare",
+  "kind": "qualifier_flip",
+  "expect": "issues",
+  "must_flag": [
+   "approved"
+  ],
+  "history": [
+   "CALDERON HEALTH - TRIAL RESULTS SUMMARY (second quarter 2025) (fictional sample)\n\nCalderon Health reported primary endpoint response of 78.2% for the second quarter of 2025.\nManagement described the approval position as not yet submitted.\nNo change to previously stated guidance was announced.",
+   "CALDERON HEALTH - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was primary endpoint response in the second quarter?\nA: 78.2%.\n\nQ: How would you characterise the approval position?\nA: It remains not yet submitted. We have not revised that position."
+  ],
+  "draft": "DRAFT TRIAL RESULTS SUMMARY\n\nCalderon Health confirmed primary endpoint response of 78.2% for the second quarter. The approval position is now approved, consistent with what we have said throughout."
+ },
+ {
+  "id": "046",
+  "domain": "energy",
+  "kind": "numeric_contradiction",
+  "expect": "issues",
+  "must_flag": [
+   "1512.0 million barrels"
+  ],
+  "history": [
+   "TALLOW GRID - OPERATIONS UPDATE (full year 2026) (fictional sample)\n\nTallow Grid reported proven reserves of 720.0 million barrels for the full year of 2026.\nManagement described the target as aspirational.\nNo change to previously stated guidance was announced.",
+   "TALLOW GRID - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was proven reserves in the full year?\nA: 720.0 million barrels.\n\nQ: How would you characterise the target?\nA: It remains aspirational. We have not revised that position."
+  ],
+  "draft": "DRAFT OPERATIONS UPDATE\n\nTallow Grid today reported proven reserves of 1512.0 million barrels for the full year of 2026, and reaffirmed its outlook."
+ },
+ {
+  "id": "047",
+  "domain": "manufacturing",
+  "kind": "absent_topic",
+  "expect": "none",
+  "must_flag": [],
+  "history": [
+   "HALDEN INDUSTRIAL - ANNUAL PRODUCTION NOTE (second quarter 2026) (fictional sample)\n\nHalden Industrial reported plant utilisation of 78.0% for the second quarter of 2026.\nManagement described the supplier position as single-sourced.\nNo change to previously stated guidance was announced.",
+   "HALDEN INDUSTRIAL - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was plant utilisation in the second quarter?\nA: 78.0%.\n\nQ: How would you characterise the supplier position?\nA: It remains single-sourced. We have not revised that position."
+  ],
+  "draft": "DRAFT ANNOUNCEMENT\n\nHalden Industrial today announced a partnership with Winsley Advisory to develop a joint training programme for graduate recruits. The programme begins next year. Financial terms were not disclosed."
+ },
+ {
+  "id": "048",
+  "domain": "technology",
+  "kind": "numeric_contradiction",
+  "expect": "issues",
+  "must_flag": [
+   "140.0%"
+  ],
+  "history": [
+   "VERDANT SYSTEMS - INVESTOR BRIEFING (full year 2026) (fictional sample)\n\nVerdant Systems reported gross retention of 87.5% for the full year of 2026.\nManagement described the certification as not held.\nNo change to previously stated guidance was announced.",
+   "VERDANT SYSTEMS - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was gross retention in the full year?\nA: 87.5%.\n\nQ: How would you characterise the certification?\nA: It remains not held. We have not revised that position."
+  ],
+  "draft": "DRAFT INVESTOR BRIEFING\n\nVerdant Systems today reported gross retention of 140.0% for the full year of 2026, and reaffirmed its outlook."
+ },
+ {
+  "id": "049",
+  "domain": "insurance",
+  "kind": "absent_topic",
+  "expect": "none",
+  "must_flag": [],
+  "history": [
+   "BELLHAVEN ASSURANCE - RESERVE DISCLOSURE (third quarter 2025) (fictional sample)\n\nBellhaven Assurance reported combined ratio of 97.5% for the third quarter of 2025.\nManagement described the reserve position as strengthening.\nNo change to previously stated guidance was announced.",
+   "BELLHAVEN ASSURANCE - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was combined ratio in the third quarter?\nA: 97.5%.\n\nQ: How would you characterise the reserve position?\nA: It remains strengthening. We have not revised that position."
+  ],
+  "draft": "DRAFT ANNOUNCEMENT\n\nBellhaven Assurance today announced a partnership with Winsley Advisory to develop a joint training programme for graduate recruits. The programme begins next year. Financial terms were not disclosed."
+ },
+ {
+  "id": "050",
+  "domain": "finance",
+  "kind": "capability_claim",
+  "expect": "issues",
+  "must_flag": [
+   "confident"
+  ],
+  "history": [
+   "CARDON GROUP - EARNINGS CALL TRANSCRIPT (second quarter 2026) (fictional sample)\n\nCardon Group reported net interest margin of 2.9% for the second quarter of 2026.\nManagement described the outlook as cautious.\nNo change to previously stated guidance was announced.",
+   "CARDON GROUP - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was net interest margin in the second quarter?\nA: 2.9%.\n\nQ: How would you characterise the outlook?\nA: It remains cautious. We have not revised that position."
+  ],
+  "draft": "DRAFT EARNINGS CALL TRANSCRIPT\n\nCardon Group reported net interest margin of 2.9% for the second quarter. The outlook is confident and has been for some time."
+ },
+ {
+  "id": "051",
+  "domain": "legal",
+  "kind": "consistent",
+  "expect": "none",
+  "must_flag": [],
+  "history": [
+   "DELOIT MERCER - COUNSEL BRIEFING (first quarter 2025) (fictional sample)\n\nDeloit Mercer reported provision recognised of $11.8 million for the first quarter of 2025.\nManagement described the regulatory position as under review.\nNo change to previously stated guidance was announced.",
+   "DELOIT MERCER - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was provision recognised in the first quarter?\nA: $11.8 million.\n\nQ: How would you characterise the regulatory position?\nA: It remains under review. We have not revised that position."
+  ],
+  "draft": "DRAFT COUNSEL BRIEFING\n\nDeloit Mercer reported provision recognised of $11.8 million for the first quarter of 2025. The regulatory position remains under review, unchanged from prior disclosure."
+ },
+ {
+  "id": "052",
+  "domain": "healthcare",
+  "kind": "absent_topic",
+  "expect": "none",
+  "must_flag": [],
+  "history": [
+   "CALDERON HEALTH - REGULATORY SUBMISSION NOTE (third quarter 2025) (fictional sample)\n\nCalderon Health reported enrolled patients of 380 patients for the third quarter of 2025.\nManagement described the approval position as not yet submitted.\nNo change to previously stated guidance was announced.",
+   "CALDERON HEALTH - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was enrolled patients in the third quarter?\nA: 380 patients.\n\nQ: How would you characterise the approval position?\nA: It remains not yet submitted. We have not revised that position."
+  ],
+  "draft": "DRAFT ANNOUNCEMENT\n\nCalderon Health today announced a partnership with Winsley Advisory to develop a joint training programme for graduate recruits. The programme begins next year. Financial terms were not disclosed."
+ },
+ {
+  "id": "053",
+  "domain": "energy",
+  "kind": "absent_topic",
+  "expect": "none",
+  "must_flag": [],
+  "history": [
+   "KESTREL ENERGY - PRODUCTION DISCLOSURE (full year 2026) (fictional sample)\n\nKestrel Energy reported daily production of 12500 barrels per day for the full year of 2026.\nManagement described the transition plan as in development.\nNo change to previously stated guidance was announced.",
+   "KESTREL ENERGY - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was daily production in the full year?\nA: 12500 barrels per day.\n\nQ: How would you characterise the transition plan?\nA: It remains in development. We have not revised that position."
+  ],
+  "draft": "DRAFT ANNOUNCEMENT\n\nKestrel Energy today announced a partnership with Winsley Advisory to develop a joint training programme for graduate recruits. The programme begins next year. Financial terms were not disclosed."
+ },
+ {
+  "id": "054",
+  "domain": "manufacturing",
+  "kind": "qualifier_flip",
+  "expect": "issues",
+  "must_flag": [
+   "dual-sourced"
+  ],
+  "history": [
+   "HALDEN INDUSTRIAL - SUPPLY CHAIN UPDATE (third quarter 2025) (fictional sample)\n\nHalden Industrial reported defect rate of 0.3% for the third quarter of 2025.\nManagement described the supplier position as single-sourced.\nNo change to previously stated guidance was announced.",
+   "HALDEN INDUSTRIAL - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was defect rate in the third quarter?\nA: 0.3%.\n\nQ: How would you characterise the supplier position?\nA: It remains single-sourced. We have not revised that position."
+  ],
+  "draft": "DRAFT SUPPLY CHAIN UPDATE\n\nHalden Industrial confirmed defect rate of 0.3% for the third quarter. The supplier position is now dual-sourced, consistent with what we have said throughout."
+ },
+ {
+  "id": "055",
+  "domain": "technology",
+  "kind": "timeline_slip",
+  "expect": "issues",
+  "must_flag": [
+   "revised upward"
+  ],
+  "history": [
+   "VERDANT SYSTEMS - PLATFORM STATUS NOTE (second quarter 2025) (fictional sample)\n\nVerdant Systems reported monthly active users of 0.9 million for the second quarter of 2025.\nManagement described the region as not operated.\nNo change to previously stated guidance was announced.",
+   "VERDANT SYSTEMS - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was monthly active users in the second quarter?\nA: 0.9 million.\n\nQ: How would you characterise the region?\nA: It remains not operated. We have not revised that position."
+  ],
+  "draft": "DRAFT PLATFORM STATUS NOTE\n\nVerdant Systems reported monthly active users of 0.9 million. Guidance has been revised upward from the previously stated level, reflecting the same approach described all year."
+ },
+ {
+  "id": "056",
+  "domain": "insurance",
+  "kind": "consistent",
+  "expect": "none",
+  "must_flag": [],
+  "history": [
+   "MARCHWOOD MUTUAL - UNDERWRITING UPDATE (full year 2025) (fictional sample)\n\nMarchwood Mutual reported gross written premium of $1180.0 million for the full year of 2025.\nManagement described the rate environment as softening.\nNo change to previously stated guidance was announced.",
+   "MARCHWOOD MUTUAL - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was gross written premium in the full year?\nA: $1180.0 million.\n\nQ: How would you characterise the rate environment?\nA: It remains softening. We have not revised that position."
+  ],
+  "draft": "DRAFT UNDERWRITING UPDATE\n\nMarchwood Mutual reported gross written premium of $1180.0 million for the full year of 2025. The rate environment remains softening, unchanged from prior disclosure."
+ },
+ {
+  "id": "057",
+  "domain": "finance",
+  "kind": "consistent",
+  "expect": "none",
+  "must_flag": [],
+  "history": [
+   "NORTHGATE CAPITAL - EARNINGS CALL TRANSCRIPT (second quarter 2026) (fictional sample)\n\nNorthgate Capital reported assets under management of $14.2 billion for the second quarter of 2026.\nManagement described the outlook as cautious.\nNo change to previously stated guidance was announced.",
+   "NORTHGATE CAPITAL - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was assets under management in the second quarter?\nA: $14.2 billion.\n\nQ: How would you characterise the outlook?\nA: It remains cautious. We have not revised that position."
+  ],
+  "draft": "DRAFT EARNINGS CALL TRANSCRIPT\n\nNorthgate Capital reported assets under management of $14.2 billion for the second quarter of 2026. The outlook remains cautious, unchanged from prior disclosure."
+ },
+ {
+  "id": "058",
+  "domain": "legal",
+  "kind": "absent_topic",
+  "expect": "none",
+  "must_flag": [],
+  "history": [
+   "STANTON REED - COUNSEL BRIEFING (second quarter 2025) (fictional sample)\n\nStanton Reed reported open matters of 7 matters for the second quarter of 2025.\nManagement described the regulatory position as under review.\nNo change to previously stated guidance was announced.",
+   "STANTON REED - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was open matters in the second quarter?\nA: 7 matters.\n\nQ: How would you characterise the regulatory position?\nA: It remains under review. We have not revised that position."
+  ],
+  "draft": "DRAFT ANNOUNCEMENT\n\nStanton Reed today announced a partnership with Winsley Advisory to develop a joint training programme for graduate recruits. The programme begins next year. Financial terms were not disclosed."
+ },
+ {
+  "id": "059",
+  "domain": "healthcare",
+  "kind": "magnitude_drift",
+  "expect": "issues",
+  "must_flag": [
+   "1388.8 patients"
+  ],
+  "history": [
+   "SABLE CLINICAL - REGULATORY SUBMISSION NOTE (second quarter 2026) (fictional sample)\n\nSable Clinical reported enrolled patients of 1240 patients for the second quarter of 2026.\nManagement described the trial status as ongoing.\nNo change to previously stated guidance was announced.",
+   "SABLE CLINICAL - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was enrolled patients in the second quarter?\nA: 1240 patients.\n\nQ: How would you characterise the trial status?\nA: It remains ongoing. We have not revised that position."
+  ],
+  "draft": "DRAFT REGULATORY SUBMISSION NOTE\n\nSable Clinical recorded enrolled patients of approximately 1388.8 patients in the second quarter, broadly in line with prior disclosure."
+ },
+ {
+  "id": "060",
+  "domain": "energy",
+  "kind": "capability_claim",
+  "expect": "issues",
+  "must_flag": [
+   "operational"
+  ],
+  "history": [
+   "KESTREL ENERGY - OPERATIONS UPDATE (full year 2025) (fictional sample)\n\nKestrel Energy reported proven reserves of 340.0 million barrels for the full year of 2025.\nManagement described the transition plan as in development.\nNo change to previously stated guidance was announced.",
+   "KESTREL ENERGY - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was proven reserves in the full year?\nA: 340.0 million barrels.\n\nQ: How would you characterise the transition plan?\nA: It remains in development. We have not revised that position."
+  ],
+  "draft": "DRAFT OPERATIONS UPDATE\n\nKestrel Energy reported proven reserves of 340.0 million barrels for the full year. The transition plan is operational and has been for some time."
+ },
+ {
+  "id": "061",
+  "domain": "manufacturing",
+  "kind": "consistent",
+  "expect": "none",
+  "must_flag": [],
+  "history": [
+   "FERROUS DYNAMICS - OPERATIONS BRIEFING (second quarter 2025) (fictional sample)\n\nFerrous Dynamics reported units shipped of 412000 units for the second quarter of 2025.\nManagement described the expansion as under evaluation.\nNo change to previously stated guidance was announced.",
+   "FERROUS DYNAMICS - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was units shipped in the second quarter?\nA: 412000 units.\n\nQ: How would you characterise the expansion?\nA: It remains under evaluation. We have not revised that position."
+  ],
+  "draft": "DRAFT OPERATIONS BRIEFING\n\nFerrous Dynamics reported units shipped of 412000 units for the second quarter of 2025. The expansion remains under evaluation, unchanged from prior disclosure."
+ },
+ {
+  "id": "062",
+  "domain": "technology",
+  "kind": "consistent",
+  "expect": "none",
+  "must_flag": [],
+  "history": [
+   "ORBIS COMPUTE - INVESTOR BRIEFING (first quarter 2026) (fictional sample)\n\nOrbis Compute reported gross retention of 92.0% for the first quarter of 2026.\nManagement described the certification as not held.\nNo change to previously stated guidance was announced.",
+   "ORBIS COMPUTE - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was gross retention in the first quarter?\nA: 92.0%.\n\nQ: How would you characterise the certification?\nA: It remains not held. We have not revised that position."
+  ],
+  "draft": "DRAFT INVESTOR BRIEFING\n\nOrbis Compute reported gross retention of 92.0% for the first quarter of 2026. The certification remains not held, unchanged from prior disclosure."
+ },
+ {
+  "id": "063",
+  "domain": "insurance",
+  "kind": "qualifier_flip",
+  "expect": "issues",
+  "must_flag": [
+   "hardening"
+  ],
+  "history": [
+   "MARCHWOOD MUTUAL - UNDERWRITING UPDATE (first quarter 2025) (fictional sample)\n\nMarchwood Mutual reported gross written premium of $1180.0 million for the first quarter of 2025.\nManagement described the rate environment as softening.\nNo change to previously stated guidance was announced.",
+   "MARCHWOOD MUTUAL - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was gross written premium in the first quarter?\nA: $1180.0 million.\n\nQ: How would you characterise the rate environment?\nA: It remains softening. We have not revised that position."
+  ],
+  "draft": "DRAFT UNDERWRITING UPDATE\n\nMarchwood Mutual confirmed gross written premium of $1180.0 million for the first quarter. The rate environment is now hardening, consistent with what we have said throughout."
+ },
+ {
+  "id": "064",
+  "domain": "finance",
+  "kind": "consistent",
+  "expect": "none",
+  "must_flag": [],
+  "history": [
+   "ASHWELL HOLDINGS - EARNINGS CALL TRANSCRIPT (third quarter 2025) (fictional sample)\n\nAshwell Holdings reported cost-to-income ratio of 49.3% for the third quarter of 2025.\nManagement described the margin trend as compressing.\nNo change to previously stated guidance was announced.",
+   "ASHWELL HOLDINGS - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was cost-to-income ratio in the third quarter?\nA: 49.3%.\n\nQ: How would you characterise the margin trend?\nA: It remains compressing. We have not revised that position."
+  ],
+  "draft": "DRAFT EARNINGS CALL TRANSCRIPT\n\nAshwell Holdings reported cost-to-income ratio of 49.3% for the third quarter of 2025. The margin trend remains compressing, unchanged from prior disclosure."
+ },
+ {
+  "id": "065",
+  "domain": "legal",
+  "kind": "magnitude_drift",
+  "expect": "issues",
+  "must_flag": [
+   "7.8 matters"
+  ],
+  "history": [
+   "HARROW & VANCE LLP - COUNSEL BRIEFING (full year 2025) (fictional sample)\n\nHarrow & Vance LLP reported open matters of 7 matters for the full year of 2025.\nManagement described the exposure as material.\nNo change to previously stated guidance was announced.",
+   "HARROW & VANCE LLP - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was open matters in the full year?\nA: 7 matters.\n\nQ: How would you characterise the exposure?\nA: It remains material. We have not revised that position."
+  ],
+  "draft": "DRAFT COUNSEL BRIEFING\n\nHarrow & Vance LLP recorded open matters of approximately 7.8 matters in the full year, broadly in line with prior disclosure."
+ },
+ {
+  "id": "066",
+  "domain": "healthcare",
+  "kind": "numeric_contradiction",
+  "expect": "issues",
+  "must_flag": [
+   "128.1%"
+  ],
+  "history": [
+   "RIVERBEND MEDICAL GROUP - CLINICAL UPDATE (second quarter 2025) (fictional sample)\n\nRiverbend Medical Group reported primary endpoint response of 61.0% for the second quarter of 2025.\nManagement described the safety profile as under evaluation.\nNo change to previously stated guidance was announced.",
+   "RIVERBEND MEDICAL GROUP - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was primary endpoint response in the second quarter?\nA: 61.0%.\n\nQ: How would you characterise the safety profile?\nA: It remains under evaluation. We have not revised that position."
+  ],
+  "draft": "DRAFT CLINICAL UPDATE\n\nRiverbend Medical Group today reported primary endpoint response of 128.1% for the second quarter of 2025, and reaffirmed its outlook."
+ },
+ {
+  "id": "067",
+  "domain": "energy",
+  "kind": "timeline_slip",
+  "expect": "issues",
+  "must_flag": [
+   "revised upward"
+  ],
+  "history": [
+   "PANHANDLE RESOURCES - PRODUCTION DISCLOSURE (third quarter 2026) (fictional sample)\n\nPanhandle Resources reported proven reserves of 118.5 million barrels for the third quarter of 2026.\nManagement described the target as aspirational.\nNo change to previously stated guidance was announced.",
+   "PANHANDLE RESOURCES - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was proven reserves in the third quarter?\nA: 118.5 million barrels.\n\nQ: How would you characterise the target?\nA: It remains aspirational. We have not revised that position."
+  ],
+  "draft": "DRAFT PRODUCTION DISCLOSURE\n\nPanhandle Resources reported proven reserves of 118.5 million barrels. Guidance has been revised upward from the previously stated level, reflecting the same approach described all year."
+ },
+ {
+  "id": "068",
+  "domain": "manufacturing",
+  "kind": "consistent",
+  "expect": "none",
+  "must_flag": [],
+  "history": [
+   "FERROUS DYNAMICS - SUPPLY CHAIN UPDATE (full year 2026) (fictional sample)\n\nFerrous Dynamics reported plant utilisation of 78.0% for the full year of 2026.\nManagement described the supplier position as single-sourced.\nNo change to previously stated guidance was announced.",
+   "FERROUS DYNAMICS - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was plant utilisation in the full year?\nA: 78.0%.\n\nQ: How would you characterise the supplier position?\nA: It remains single-sourced. We have not revised that position."
+  ],
+  "draft": "DRAFT SUPPLY CHAIN UPDATE\n\nFerrous Dynamics reported plant utilisation of 78.0% for the full year of 2026. The supplier position remains single-sourced, unchanged from prior disclosure."
+ },
+ {
+  "id": "069",
+  "domain": "technology",
+  "kind": "numeric_contradiction",
+  "expect": "issues",
+  "must_flag": [
+   "8.4 million"
+  ],
+  "history": [
+   "LUMEN DATA - INVESTOR BRIEFING (full year 2026) (fictional sample)\n\nLumen Data reported monthly active users of 18.6 million for the full year of 2026.\nManagement described the region as not operated.\nNo change to previously stated guidance was announced.",
+   "LUMEN DATA - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was monthly active users in the full year?\nA: 18.6 million.\n\nQ: How would you characterise the region?\nA: It remains not operated. We have not revised that position."
+  ],
+  "draft": "DRAFT INVESTOR BRIEFING\n\nLumen Data today reported monthly active users of 8.4 million for the full year of 2026, and reaffirmed its outlook."
+ },
+ {
+  "id": "070",
+  "domain": "insurance",
+  "kind": "numeric_contradiction",
+  "expect": "issues",
+  "must_flag": [
+   "146.9%"
+  ],
+  "history": [
+   "BELLHAVEN ASSURANCE - POLICYHOLDER REPORT (first quarter 2026) (fictional sample)\n\nBellhaven Assurance reported combined ratio of 91.8% for the first quarter of 2026.\nManagement described the rate environment as softening.\nNo change to previously stated guidance was announced.",
+   "BELLHAVEN ASSURANCE - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was combined ratio in the first quarter?\nA: 91.8%.\n\nQ: How would you characterise the rate environment?\nA: It remains softening. We have not revised that position."
+  ],
+  "draft": "DRAFT POLICYHOLDER REPORT\n\nBellhaven Assurance today reported combined ratio of 146.9% for the first quarter of 2026, and reaffirmed its outlook."
+ },
+ {
+  "id": "071",
+  "domain": "finance",
+  "kind": "timeline_slip",
+  "expect": "issues",
+  "must_flag": [
+   "revised upward"
+  ],
+  "history": [
+   "BRIGHTMOOR FINANCIAL - QUARTERLY RESULTS RELEASE (second quarter 2026) (fictional sample)\n\nBrightmoor Financial reported revenue of $96.5 million for the second quarter of 2026.\nManagement described the growth as mid-single-digit.\nNo change to previously stated guidance was announced.",
+   "BRIGHTMOOR FINANCIAL - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was revenue in the second quarter?\nA: $96.5 million.\n\nQ: How would you characterise the growth?\nA: It remains mid-single-digit. We have not revised that position."
+  ],
+  "draft": "DRAFT QUARTERLY RESULTS RELEASE\n\nBrightmoor Financial reported revenue of $96.5 million. Guidance has been revised upward from the previously stated level, reflecting the same approach described all year."
+ },
+ {
+  "id": "072",
+  "domain": "legal",
+  "kind": "timeline_slip",
+  "expect": "issues",
+  "must_flag": [
+   "revised upward"
+  ],
+  "history": [
+   "HARROW & VANCE LLP - REGULATORY FILING NOTE (full year 2025) (fictional sample)\n\nHarrow & Vance LLP reported provision recognised of $0.9 million for the full year of 2025.\nManagement described the case outlook as unresolved.\nNo change to previously stated guidance was announced.",
+   "HARROW & VANCE LLP - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was provision recognised in the full year?\nA: $0.9 million.\n\nQ: How would you characterise the case outlook?\nA: It remains unresolved. We have not revised that position."
+  ],
+  "draft": "DRAFT REGULATORY FILING NOTE\n\nHarrow & Vance LLP reported provision recognised of $0.9 million. Guidance has been revised upward from the previously stated level, reflecting the same approach described all year."
+ },
+ {
+  "id": "073",
+  "domain": "healthcare",
+  "kind": "timeline_slip",
+  "expect": "issues",
+  "must_flag": [
+   "revised upward"
+  ],
+  "history": [
+   "SABLE CLINICAL - TRIAL RESULTS SUMMARY (third quarter 2026) (fictional sample)\n\nSable Clinical reported enrolled patients of 2610 patients for the third quarter of 2026.\nManagement described the safety profile as under evaluation.\nNo change to previously stated guidance was announced.",
+   "SABLE CLINICAL - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was enrolled patients in the third quarter?\nA: 2610 patients.\n\nQ: How would you characterise the safety profile?\nA: It remains under evaluation. We have not revised that position."
+  ],
+  "draft": "DRAFT TRIAL RESULTS SUMMARY\n\nSable Clinical reported enrolled patients of 2610 patients. Guidance has been revised upward from the previously stated level, reflecting the same approach described all year."
+ },
+ {
+  "id": "074",
+  "domain": "energy",
+  "kind": "magnitude_drift",
+  "expect": "issues",
+  "must_flag": [
+   "14000.0 barrels per day"
+  ],
+  "history": [
+   "PANHANDLE RESOURCES - PRODUCTION DISCLOSURE (first quarter 2025) (fictional sample)\n\nPanhandle Resources reported daily production of 12500 barrels per day for the first quarter of 2025.\nManagement described the target as aspirational.\nNo change to previously stated guidance was announced.",
+   "PANHANDLE RESOURCES - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was daily production in the first quarter?\nA: 12500 barrels per day.\n\nQ: How would you characterise the target?\nA: It remains aspirational. We have not revised that position."
+  ],
+  "draft": "DRAFT PRODUCTION DISCLOSURE\n\nPanhandle Resources recorded daily production of approximately 14000.0 barrels per day in the first quarter, broadly in line with prior disclosure."
+ },
+ {
+  "id": "075",
+  "domain": "manufacturing",
+  "kind": "qualifier_flip",
+  "expect": "issues",
+  "must_flag": [
+   "unconstrained"
+  ],
+  "history": [
+   "CORTEZ MANUFACTURING - SUPPLY CHAIN UPDATE (first quarter 2025) (fictional sample)\n\nCortez Manufacturing reported plant utilisation of 78.0% for the first quarter of 2025.\nManagement described the capacity as constrained.\nNo change to previously stated guidance was announced.",
+   "CORTEZ MANUFACTURING - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was plant utilisation in the first quarter?\nA: 78.0%.\n\nQ: How would you characterise the capacity?\nA: It remains constrained. We have not revised that position."
+  ],
+  "draft": "DRAFT SUPPLY CHAIN UPDATE\n\nCortez Manufacturing confirmed plant utilisation of 78.0% for the first quarter. The capacity is now unconstrained, consistent with what we have said throughout."
+ },
+ {
+  "id": "076",
+  "domain": "technology",
+  "kind": "numeric_contradiction",
+  "expect": "issues",
+  "must_flag": [
+   "8.8 million"
+  ],
+  "history": [
+   "LUMEN DATA - PRODUCT UPDATE (second quarter 2026) (fictional sample)\n\nLumen Data reported monthly active users of 4.2 million for the second quarter of 2026.\nManagement described the region as not operated.\nNo change to previously stated guidance was announced.",
+   "LUMEN DATA - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was monthly active users in the second quarter?\nA: 4.2 million.\n\nQ: How would you characterise the region?\nA: It remains not operated. We have not revised that position."
+  ],
+  "draft": "DRAFT PRODUCT UPDATE\n\nLumen Data today reported monthly active users of 8.8 million for the second quarter of 2026, and reaffirmed its outlook."
+ },
+ {
+  "id": "077",
+  "domain": "insurance",
+  "kind": "magnitude_drift",
+  "expect": "issues",
+  "must_flag": [
+   "115.6%"
+  ],
+  "history": [
+   "BELLHAVEN ASSURANCE - UNDERWRITING UPDATE (first quarter 2026) (fictional sample)\n\nBellhaven Assurance reported combined ratio of 103.2% for the first quarter of 2026.\nManagement described the rate environment as softening.\nNo change to previously stated guidance was announced.",
+   "BELLHAVEN ASSURANCE - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was combined ratio in the first quarter?\nA: 103.2%.\n\nQ: How would you characterise the rate environment?\nA: It remains softening. We have not revised that position."
+  ],
+  "draft": "DRAFT UNDERWRITING UPDATE\n\nBellhaven Assurance recorded combined ratio of approximately 115.6% in the first quarter, broadly in line with prior disclosure."
+ },
+ {
+  "id": "078",
+  "domain": "finance",
+  "kind": "capability_claim",
+  "expect": "issues",
+  "must_flag": [
+   "confident"
+  ],
+  "history": [
+   "NORTHGATE CAPITAL - EARNINGS CALL TRANSCRIPT (third quarter 2025) (fictional sample)\n\nNorthgate Capital reported assets under management of $8.7 billion for the third quarter of 2025.\nManagement described the outlook as cautious.\nNo change to previously stated guidance was announced.",
+   "NORTHGATE CAPITAL - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was assets under management in the third quarter?\nA: $8.7 billion.\n\nQ: How would you characterise the outlook?\nA: It remains cautious. We have not revised that position."
+  ],
+  "draft": "DRAFT EARNINGS CALL TRANSCRIPT\n\nNorthgate Capital reported assets under management of $8.7 billion for the third quarter. The outlook is confident and has been for some time."
+ },
+ {
+  "id": "079",
+  "domain": "legal",
+  "kind": "consistent",
+  "expect": "none",
+  "must_flag": [],
+  "history": [
+   "HARROW & VANCE LLP - LITIGATION STATUS DISCLOSURE (first quarter 2026) (fictional sample)\n\nHarrow & Vance LLP reported provision recognised of $11.8 million for the first quarter of 2026.\nManagement described the exposure as material.\nNo change to previously stated guidance was announced.",
+   "HARROW & VANCE LLP - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was provision recognised in the first quarter?\nA: $11.8 million.\n\nQ: How would you characterise the exposure?\nA: It remains material. We have not revised that position."
+  ],
+  "draft": "DRAFT LITIGATION STATUS DISCLOSURE\n\nHarrow & Vance LLP reported provision recognised of $11.8 million for the first quarter of 2026. The exposure remains material, unchanged from prior disclosure."
+ },
+ {
+  "id": "080",
+  "domain": "healthcare",
+  "kind": "magnitude_drift",
+  "expect": "issues",
+  "must_flag": [
+   "68.3%"
+  ],
+  "history": [
+   "RIVERBEND MEDICAL GROUP - REGULATORY SUBMISSION NOTE (second quarter 2025) (fictional sample)\n\nRiverbend Medical Group reported primary endpoint response of 61.0% for the second quarter of 2025.\nManagement described the safety profile as under evaluation.\nNo change to previously stated guidance was announced.",
+   "RIVERBEND MEDICAL GROUP - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was primary endpoint response in the second quarter?\nA: 61.0%.\n\nQ: How would you characterise the safety profile?\nA: It remains under evaluation. We have not revised that position."
+  ],
+  "draft": "DRAFT REGULATORY SUBMISSION NOTE\n\nRiverbend Medical Group recorded primary endpoint response of approximately 68.3% in the second quarter, broadly in line with prior disclosure."
+ },
+ {
+  "id": "081",
+  "domain": "energy",
+  "kind": "capability_claim",
+  "expect": "issues",
+  "must_flag": [
+   "operational"
+  ],
+  "history": [
+   "PANHANDLE RESOURCES - PRODUCTION DISCLOSURE (second quarter 2026) (fictional sample)\n\nPanhandle Resources reported emissions intensity of 18.4 kg CO2e per barrel for the second quarter of 2026.\nManagement described the transition plan as in development.\nNo change to previously stated guidance was announced.",
+   "PANHANDLE RESOURCES - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was emissions intensity in the second quarter?\nA: 18.4 kg CO2e per barrel.\n\nQ: How would you characterise the transition plan?\nA: It remains in development. We have not revised that position."
+  ],
+  "draft": "DRAFT PRODUCTION DISCLOSURE\n\nPanhandle Resources reported emissions intensity of 18.4 kg CO2e per barrel for the second quarter. The transition plan is operational and has been for some time."
+ },
+ {
+  "id": "082",
+  "domain": "manufacturing",
+  "kind": "qualifier_flip",
+  "expect": "issues",
+  "must_flag": [
+   "unconstrained"
+  ],
+  "history": [
+   "HALDEN INDUSTRIAL - SUPPLY CHAIN UPDATE (full year 2025) (fictional sample)\n\nHalden Industrial reported defect rate of 0.3% for the full year of 2025.\nManagement described the capacity as constrained.\nNo change to previously stated guidance was announced.",
+   "HALDEN INDUSTRIAL - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was defect rate in the full year?\nA: 0.3%.\n\nQ: How would you characterise the capacity?\nA: It remains constrained. We have not revised that position."
+  ],
+  "draft": "DRAFT SUPPLY CHAIN UPDATE\n\nHalden Industrial confirmed defect rate of 0.3% for the full year. The capacity is now unconstrained, consistent with what we have said throughout."
+ },
+ {
+  "id": "083",
+  "domain": "technology",
+  "kind": "numeric_contradiction",
+  "expect": "issues",
+  "must_flag": [
+   "45.0%"
+  ],
+  "history": [
+   "VERDANT SYSTEMS - PLATFORM STATUS NOTE (third quarter 2026) (fictional sample)\n\nVerdant Systems reported uptime of 99.9% for the third quarter of 2026.\nManagement described the region as not operated.\nNo change to previously stated guidance was announced.",
+   "VERDANT SYSTEMS - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was uptime in the third quarter?\nA: 99.9%.\n\nQ: How would you characterise the region?\nA: It remains not operated. We have not revised that position."
+  ],
+  "draft": "DRAFT PLATFORM STATUS NOTE\n\nVerdant Systems today reported uptime of 45.0% for the third quarter of 2026, and reaffirmed its outlook."
+ },
+ {
+  "id": "084",
+  "domain": "insurance",
+  "kind": "consistent",
+  "expect": "none",
+  "must_flag": [],
+  "history": [
+   "MARCHWOOD MUTUAL - RESERVE DISCLOSURE (second quarter 2025) (fictional sample)\n\nMarchwood Mutual reported gross written premium of $215.5 million for the second quarter of 2025.\nManagement described the catastrophe exposure as elevated.\nNo change to previously stated guidance was announced.",
+   "MARCHWOOD MUTUAL - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was gross written premium in the second quarter?\nA: $215.5 million.\n\nQ: How would you characterise the catastrophe exposure?\nA: It remains elevated. We have not revised that position."
+  ],
+  "draft": "DRAFT RESERVE DISCLOSURE\n\nMarchwood Mutual reported gross written premium of $215.5 million for the second quarter of 2025. The catastrophe exposure remains elevated, unchanged from prior disclosure."
+ },
+ {
+  "id": "085",
+  "domain": "finance",
+  "kind": "consistent",
+  "expect": "none",
+  "must_flag": [],
+  "history": [
+   "NORTHGATE CAPITAL - QUARTERLY RESULTS RELEASE (second quarter 2025) (fictional sample)\n\nNorthgate Capital reported cost-to-income ratio of 62.5% for the second quarter of 2025.\nManagement described the outlook as cautious.\nNo change to previously stated guidance was announced.",
+   "NORTHGATE CAPITAL - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was cost-to-income ratio in the second quarter?\nA: 62.5%.\n\nQ: How would you characterise the outlook?\nA: It remains cautious. We have not revised that position."
+  ],
+  "draft": "DRAFT QUARTERLY RESULTS RELEASE\n\nNorthgate Capital reported cost-to-income ratio of 62.5% for the second quarter of 2025. The outlook remains cautious, unchanged from prior disclosure."
+ },
+ {
+  "id": "086",
+  "domain": "legal",
+  "kind": "numeric_contradiction",
+  "expect": "issues",
+  "must_flag": [
+   "$3.7 million"
+  ],
+  "history": [
+   "STANTON REED - COUNSEL BRIEFING (first quarter 2026) (fictional sample)\n\nStanton Reed reported settlement amount of $2.3 million for the first quarter of 2026.\nManagement described the exposure as material.\nNo change to previously stated guidance was announced.",
+   "STANTON REED - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was settlement amount in the first quarter?\nA: $2.3 million.\n\nQ: How would you characterise the exposure?\nA: It remains material. We have not revised that position."
+  ],
+  "draft": "DRAFT COUNSEL BRIEFING\n\nStanton Reed today reported settlement amount of $3.7 million for the first quarter of 2026, and reaffirmed its outlook."
+ },
+ {
+  "id": "087",
+  "domain": "healthcare",
+  "kind": "numeric_contradiction",
+  "expect": "issues",
+  "must_flag": [
+   "93.5%"
+  ],
+  "history": [
+   "RIVERBEND MEDICAL GROUP - REGULATORY SUBMISSION NOTE (second quarter 2026) (fictional sample)\n\nRiverbend Medical Group reported primary endpoint response of 44.5% for the second quarter of 2026.\nManagement described the safety profile as under evaluation.\nNo change to previously stated guidance was announced.",
+   "RIVERBEND MEDICAL GROUP - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was primary endpoint response in the second quarter?\nA: 44.5%.\n\nQ: How would you characterise the safety profile?\nA: It remains under evaluation. We have not revised that position."
+  ],
+  "draft": "DRAFT REGULATORY SUBMISSION NOTE\n\nRiverbend Medical Group today reported primary endpoint response of 93.5% for the second quarter of 2026, and reaffirmed its outlook."
+ },
+ {
+  "id": "088",
+  "domain": "energy",
+  "kind": "qualifier_flip",
+  "expect": "issues",
+  "must_flag": [
+   "operational"
+  ],
+  "history": [
+   "KESTREL ENERGY - OPERATIONS UPDATE (second quarter 2026) (fictional sample)\n\nKestrel Energy reported emissions intensity of 25.1 kg CO2e per barrel for the second quarter of 2026.\nManagement described the transition plan as in development.\nNo change to previously stated guidance was announced.",
+   "KESTREL ENERGY - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was emissions intensity in the second quarter?\nA: 25.1 kg CO2e per barrel.\n\nQ: How would you characterise the transition plan?\nA: It remains in development. We have not revised that position."
+  ],
+  "draft": "DRAFT OPERATIONS UPDATE\n\nKestrel Energy confirmed emissions intensity of 25.1 kg CO2e per barrel for the second quarter. The transition plan is now operational, consistent with what we have said throughout."
+ },
+ {
+  "id": "089",
+  "domain": "manufacturing",
+  "kind": "absent_topic",
+  "expect": "none",
+  "must_flag": [],
+  "history": [
+   "CORTEZ MANUFACTURING - ANNUAL PRODUCTION NOTE (second quarter 2026) (fictional sample)\n\nCortez Manufacturing reported defect rate of 2.1% for the second quarter of 2026.\nManagement described the supplier position as single-sourced.\nNo change to previously stated guidance was announced.",
+   "CORTEZ MANUFACTURING - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was defect rate in the second quarter?\nA: 2.1%.\n\nQ: How would you characterise the supplier position?\nA: It remains single-sourced. We have not revised that position."
+  ],
+  "draft": "DRAFT ANNOUNCEMENT\n\nCortez Manufacturing today announced a partnership with Winsley Advisory to develop a joint training programme for graduate recruits. The programme begins next year. Financial terms were not disclosed."
+ },
+ {
+  "id": "090",
+  "domain": "technology",
+  "kind": "numeric_contradiction",
+  "expect": "issues",
+  "must_flag": [
+   "160.0%"
+  ],
+  "history": [
+   "LUMEN DATA - INVESTOR BRIEFING (third quarter 2026) (fictional sample)\n\nLumen Data reported uptime of 99.99% for the third quarter of 2026.\nManagement described the certification as not held.\nNo change to previously stated guidance was announced.",
+   "LUMEN DATA - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was uptime in the third quarter?\nA: 99.99%.\n\nQ: How would you characterise the certification?\nA: It remains not held. We have not revised that position."
+  ],
+  "draft": "DRAFT INVESTOR BRIEFING\n\nLumen Data today reported uptime of 160.0% for the third quarter of 2026, and reaffirmed its outlook."
+ },
+ {
+  "id": "091",
+  "domain": "insurance",
+  "kind": "magnitude_drift",
+  "expect": "issues",
+  "must_flag": [
+   "$241.4 million"
+  ],
+  "history": [
+   "BELLHAVEN ASSURANCE - UNDERWRITING UPDATE (first quarter 2025) (fictional sample)\n\nBellhaven Assurance reported gross written premium of $215.5 million for the first quarter of 2025.\nManagement described the rate environment as softening.\nNo change to previously stated guidance was announced.",
+   "BELLHAVEN ASSURANCE - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was gross written premium in the first quarter?\nA: $215.5 million.\n\nQ: How would you characterise the rate environment?\nA: It remains softening. We have not revised that position."
+  ],
+  "draft": "DRAFT UNDERWRITING UPDATE\n\nBellhaven Assurance recorded gross written premium of approximately $241.4 million in the first quarter, broadly in line with prior disclosure."
+ },
+ {
+  "id": "092",
+  "domain": "finance",
+  "kind": "consistent",
+  "expect": "none",
+  "must_flag": [],
+  "history": [
+   "BRIGHTMOOR FINANCIAL - EARNINGS CALL TRANSCRIPT (second quarter 2026) (fictional sample)\n\nBrightmoor Financial reported assets under management of $22.9 billion for the second quarter of 2026.\nManagement described the growth as mid-single-digit.\nNo change to previously stated guidance was announced.",
+   "BRIGHTMOOR FINANCIAL - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was assets under management in the second quarter?\nA: $22.9 billion.\n\nQ: How would you characterise the growth?\nA: It remains mid-single-digit. We have not revised that position."
+  ],
+  "draft": "DRAFT EARNINGS CALL TRANSCRIPT\n\nBrightmoor Financial reported assets under management of $22.9 billion for the second quarter of 2026. The growth remains mid-single-digit, unchanged from prior disclosure."
+ },
+ {
+  "id": "093",
+  "domain": "legal",
+  "kind": "numeric_contradiction",
+  "expect": "issues",
+  "must_flag": [
+   "$5.3 million"
+  ],
+  "history": [
+   "STANTON REED - COUNSEL BRIEFING (third quarter 2025) (fictional sample)\n\nStanton Reed reported provision recognised of $11.8 million for the third quarter of 2025.\nManagement described the case outlook as unresolved.\nNo change to previously stated guidance was announced.",
+   "STANTON REED - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was provision recognised in the third quarter?\nA: $11.8 million.\n\nQ: How would you characterise the case outlook?\nA: It remains unresolved. We have not revised that position."
+  ],
+  "draft": "DRAFT COUNSEL BRIEFING\n\nStanton Reed today reported provision recognised of $5.3 million for the third quarter of 2025, and reaffirmed its outlook."
+ },
+ {
+  "id": "094",
+  "domain": "healthcare",
+  "kind": "magnitude_drift",
+  "expect": "issues",
+  "must_flag": [
+   "3.4 events"
+  ],
+  "history": [
+   "SABLE CLINICAL - REGULATORY SUBMISSION NOTE (second quarter 2026) (fictional sample)\n\nSable Clinical reported serious adverse events of 3 events for the second quarter of 2026.\nManagement described the safety profile as under evaluation.\nNo change to previously stated guidance was announced.",
+   "SABLE CLINICAL - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was serious adverse events in the second quarter?\nA: 3 events.\n\nQ: How would you characterise the safety profile?\nA: It remains under evaluation. We have not revised that position."
+  ],
+  "draft": "DRAFT REGULATORY SUBMISSION NOTE\n\nSable Clinical recorded serious adverse events of approximately 3.4 events in the second quarter, broadly in line with prior disclosure."
+ },
+ {
+  "id": "095",
+  "domain": "energy",
+  "kind": "numeric_contradiction",
+  "expect": "issues",
+  "must_flag": [
+   "248.9 million barrels"
+  ],
+  "history": [
+   "TALLOW GRID - PRODUCTION DISCLOSURE (first quarter 2026) (fictional sample)\n\nTallow Grid reported proven reserves of 118.5 million barrels for the first quarter of 2026.\nManagement described the target as aspirational.\nNo change to previously stated guidance was announced.",
+   "TALLOW GRID - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was proven reserves in the first quarter?\nA: 118.5 million barrels.\n\nQ: How would you characterise the target?\nA: It remains aspirational. We have not revised that position."
+  ],
+  "draft": "DRAFT PRODUCTION DISCLOSURE\n\nTallow Grid today reported proven reserves of 248.9 million barrels for the first quarter of 2026, and reaffirmed its outlook."
+ },
+ {
+  "id": "096",
+  "domain": "manufacturing",
+  "kind": "numeric_contradiction",
+  "expect": "issues",
+  "must_flag": [
+   "185400.0 units"
+  ],
+  "history": [
+   "FERROUS DYNAMICS - OPERATIONS BRIEFING (second quarter 2026) (fictional sample)\n\nFerrous Dynamics reported units shipped of 412000 units for the second quarter of 2026.\nManagement described the expansion as under evaluation.\nNo change to previously stated guidance was announced.",
+   "FERROUS DYNAMICS - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was units shipped in the second quarter?\nA: 412000 units.\n\nQ: How would you characterise the expansion?\nA: It remains under evaluation. We have not revised that position."
+  ],
+  "draft": "DRAFT OPERATIONS BRIEFING\n\nFerrous Dynamics today reported units shipped of 185400.0 units for the second quarter of 2026, and reaffirmed its outlook."
+ },
+ {
+  "id": "097",
+  "domain": "technology",
+  "kind": "capability_claim",
+  "expect": "issues",
+  "must_flag": [
+   "held"
+  ],
+  "history": [
+   "ORBIS COMPUTE - INVESTOR BRIEFING (third quarter 2025) (fictional sample)\n\nOrbis Compute reported monthly active users of 18.6 million for the third quarter of 2025.\nManagement described the certification as not held.\nNo change to previously stated guidance was announced.",
+   "ORBIS COMPUTE - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was monthly active users in the third quarter?\nA: 18.6 million.\n\nQ: How would you characterise the certification?\nA: It remains not held. We have not revised that position."
+  ],
+  "draft": "DRAFT INVESTOR BRIEFING\n\nOrbis Compute reported monthly active users of 18.6 million for the third quarter. The certification is held and has been for some time."
+ },
+ {
+  "id": "098",
+  "domain": "insurance",
+  "kind": "consistent",
+  "expect": "none",
+  "must_flag": [],
+  "history": [
+   "TRELLIS RE - UNDERWRITING UPDATE (third quarter 2026) (fictional sample)\n\nTrellis Re reported combined ratio of 103.2% for the third quarter of 2026.\nManagement described the rate environment as softening.\nNo change to previously stated guidance was announced.",
+   "TRELLIS RE - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was combined ratio in the third quarter?\nA: 103.2%.\n\nQ: How would you characterise the rate environment?\nA: It remains softening. We have not revised that position."
+  ],
+  "draft": "DRAFT UNDERWRITING UPDATE\n\nTrellis Re reported combined ratio of 103.2% for the third quarter of 2026. The rate environment remains softening, unchanged from prior disclosure."
+ },
+ {
+  "id": "099",
+  "domain": "finance",
+  "kind": "numeric_contradiction",
+  "expect": "issues",
+  "must_flag": [
+   "$36.6 billion"
+  ],
+  "history": [
+   "ASHWELL HOLDINGS - INVESTOR LETTER (second quarter 2026) (fictional sample)\n\nAshwell Holdings reported assets under management of $22.9 billion for the second quarter of 2026.\nManagement described the margin trend as compressing.\nNo change to previously stated guidance was announced.",
+   "ASHWELL HOLDINGS - INVESTOR FAQ (2026) (fictional sample)\n\nQ: What was assets under management in the second quarter?\nA: $22.9 billion.\n\nQ: How would you characterise the margin trend?\nA: It remains compressing. We have not revised that position."
+  ],
+  "draft": "DRAFT INVESTOR LETTER\n\nAshwell Holdings today reported assets under management of $36.6 billion for the second quarter of 2026, and reaffirmed its outlook."
+ },
+ {
+  "id": "100",
+  "domain": "legal",
+  "kind": "consistent",
+  "expect": "none",
+  "must_flag": [],
+  "history": [
+   "DELOIT MERCER - LITIGATION STATUS DISCLOSURE (full year 2025) (fictional sample)\n\nDeloit Mercer reported open matters of 41 matters for the full year of 2025.\nManagement described the exposure as material.\nNo change to previously stated guidance was announced.",
+   "DELOIT MERCER - INVESTOR FAQ (2025) (fictional sample)\n\nQ: What was open matters in the full year?\nA: 41 matters.\n\nQ: How would you characterise the exposure?\nA: It remains material. We have not revised that position."
+  ],
+  "draft": "DRAFT LITIGATION STATUS DISCLOSURE\n\nDeloit Mercer reported open matters of 41 matters for the full year of 2025. The exposure remains material, unchanged from prior disclosure."
+ }
+]
