@@ -6,7 +6,9 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from db import engine, User, Document, Review, AuditLog, Membership, HistoryItem
-from auth import current_user, current_org_id
+import harmony
+from auth import current_user, current_org_id, require_role
+from routes_auth import audit
 
 router = APIRouter(prefix="/api", tags=["documents"])
 
@@ -202,3 +204,84 @@ def analytics(org_id: str = Depends(current_org_id), user: User = Depends(curren
         "score_trend": trend,
         "review_performance": review_performance,
     }
+
+
+# ============================================================================
+# DELETING
+# ============================================================================
+# Admin and above. Both are irreversible and say so; neither is offered to a
+# reviewer or editor, because removing the record of what was checked is an
+# administrative act rather than part of reviewing.
+
+@router.delete("/documents/{doc_id}")
+def delete_document(doc_id: str, org_id: str = Depends(current_org_id),
+                    user: User = Depends(require_role("admin"))):
+    """Delete a document and every review of it.
+
+    This removes the RECORD of the review. It does not remove anything the
+    document contributed to the evidence library when it was approved - that is
+    a separate row with its own delete, because the two are separate decisions:
+    withdrawing a draft is not the same as retracting the statement it made.
+    """
+    with Session(engine) as s:
+        doc = s.get(Document, doc_id)
+        # The org filter IS the access check, not a nicety.
+        if not doc or doc.org_id != org_id:
+            raise HTTPException(404, "Document not found.")
+        title = doc.title
+        reviews = s.exec(select(Review).where(Review.document_id == doc_id)).all()
+        for r in reviews:
+            s.delete(r)
+        s.delete(doc)
+        s.commit()
+        n_reviews = len(reviews)
+
+    audit(org_id, user.id, "document.deleted", f"{title} ({n_reviews} review(s))")
+    return {"status": "deleted", "document": title, "reviews_removed": n_reviews}
+
+
+@router.delete("/history/{item_id}")
+def delete_history_item(item_id: str, org_id: str = Depends(current_org_id),
+                        user: User = Depends(require_role("admin"))):
+    """Remove an evidence document, including its vectors.
+
+    The vectors go FIRST, and the row is only deleted if that succeeded. The
+    other order fails badly: a row removed while its chunks survive leaves
+    evidence that still steers every future review with nothing in the library
+    pointing at it - invisible and unremovable through the UI.
+
+    Rows created before chunks carried a history_id cannot be targeted, so those
+    are refused rather than half-deleted.
+    """
+    with Session(engine) as s:
+        item = s.get(HistoryItem, item_id)
+        if not item or item.org_id != org_id:
+            raise HTTPException(404, "Evidence document not found.")
+        label = item.source_file or item.company or "Pasted text"
+
+    before = harmony.count_history_chunks(item_id, org_id)
+    if before == 0:
+        # Nothing tagged with this id - either legacy, or already cleared.
+        raise HTTPException(
+            409,
+            "This entry was added before evidence could be individually deleted, so its "
+            "passages cannot be located. Removing the row would leave them in the search "
+            "index permanently. Contact support to have the collection rebuilt.")
+
+    if not harmony.delete_history_chunks(item_id, org_id):
+        raise HTTPException(503, "Could not reach the search index. Nothing was deleted.")
+
+    after = harmony.count_history_chunks(item_id, org_id)
+    if after > 0:
+        raise HTTPException(500, f"{after} passage(s) survived the delete. The entry was kept "
+                                 "so it can be retried rather than orphaning them.")
+
+    with Session(engine) as s:
+        item = s.get(HistoryItem, item_id)
+        if item:
+            s.delete(item)
+            s.commit()
+
+    audit(org_id, user.id, "history.deleted", f"{label} ({before} passage(s))")
+    return {"status": "deleted", "document": label, "passages_removed": before}
+

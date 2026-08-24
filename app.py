@@ -125,11 +125,23 @@ class DecisionIn(BaseModel):
 
 # ---- API endpoints ----
 
-def _record_history_item(org_id: str, user_id: str, company: str, source_file: str, doc_type: str, chunk_count: int):
+def _new_history_id() -> str:
+    """Allocated BEFORE ingest so the chunks can carry it.
+
+    The row used to be created after add_to_history() returned, which meant the
+    vectors existed with no reference to the row that described them - and
+    without that reference a delete cannot find them.
+    """
+    return str(uuid.uuid4())
+
+
+def _record_history_item(org_id: str, user_id: str, company: str, source_file: str,
+                         doc_type: str, chunk_count: int, history_id: str | None = None):
     if chunk_count <= 0:
         return
     with Session(engine) as s:
-        s.add(HistoryItem(org_id=org_id, company=company or "Unknown", source_file=source_file,
+        s.add(HistoryItem(id=history_id or _new_history_id(), org_id=org_id,
+                          company=company or "Unknown", source_file=source_file,
                           doc_type=doc_type, chunk_count=chunk_count, added_by=user_id))
         s.commit()
 
@@ -138,8 +150,10 @@ def _record_history_item(org_id: str, user_id: str, company: str, source_file: s
 def ingest_text(body: IngestText, user: User = Depends(require_role("editor")),
                 org_id: str = Depends(current_org_id)):
     harmony.set_org(org_id)   # org-scoped tag
-    n = harmony.add_to_history(body.text, company=body.company or "Unknown", doc_type="history")
-    _record_history_item(org_id, user.id, body.company or "Unknown", "", "history", n)
+    hid = _new_history_id()
+    n = harmony.add_to_history(body.text, company=body.company or "Unknown",
+                               doc_type="history", history_id=hid)
+    _record_history_item(org_id, user.id, body.company or "Unknown", "", "history", n, hid)
     audit(org_id, user.id, "history.ingested", "text")
     return {"status": "ok", "detail": "Statement added to history."}
 
@@ -291,8 +305,10 @@ async def upload_history(files: list[UploadFile] = File(...), company: str = For
         data = await f.read()
         text = _extract_text(f.filename, data)
         if text.strip():
-            n = harmony.add_to_history(text, company=company or "Unknown", doc_type="history", source_file=f.filename)
-            _record_history_item(org_id, user.id, company or "Unknown", f.filename, "history", n)
+            hid = _new_history_id()
+            n = harmony.add_to_history(text, company=company or "Unknown", doc_type="history",
+                                       source_file=f.filename, history_id=hid)
+            _record_history_item(org_id, user.id, company or "Unknown", f.filename, "history", n, hid)
             title = (f.filename.rsplit(".", 1)[0] if f.filename else "Untitled")
             with Session(engine) as s:
                 s.add(Document(org_id=org_id, title=title, doc_type="Historical Disclosure",

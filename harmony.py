@@ -225,10 +225,13 @@ def ensure_collection(force: bool = False) -> bool:
             )
         try:
             from qdrant_client.http.models import PayloadSchemaType
-            qdrant_client.create_payload_index(
-                collection_name=COLLECTION, field_name="metadata.org_id",
-                field_schema=PayloadSchemaType.KEYWORD,
-            )
+            for field in ("metadata.org_id", "metadata.history_id"):
+                # history_id needs its own index for the same reason org_id does:
+                # Qdrant rejects a filtered operation on an unindexed field.
+                qdrant_client.create_payload_index(
+                    collection_name=COLLECTION, field_name=field,
+                    field_schema=PayloadSchemaType.KEYWORD,
+                )
         except Exception as _e:
             # Already present is the common case and is not an error.
             print("payload index on metadata.org_id: already present or not (re)created:", _e)
@@ -455,16 +458,71 @@ def read_path_as_text(path: str) -> str:
     return "\n\n".join(texts)
 
 
-def add_to_history(text: str, company: str = "Unknown", doc_type: str = "approved", source_file: str | None = None) -> int:
+def add_to_history(text: str, company: str = "Unknown", doc_type: str = "approved",
+                   source_file: str | None = None, history_id: str | None = None) -> int:
     # approved draft (ya koi statement) ko history mein daalta hai (dedup ke saath). Chunk count
     # return karta hai taake caller ek HistoryItem record bana sake (Evidence Library listing ke liye).
+    #
+    # history_id: the row this text belongs to. Without it a chunk cannot be
+    # traced back to the document it came from, so deleting that document would
+    # remove it from the library while its vectors kept steering every future
+    # review - present in the evidence, absent from the list, and impossible to
+    # find. The tag is what makes deletion actually delete.
     metadata = {"company": company, "date": str(date.today()), "doc_type": doc_type}
     if source_file:
         metadata["source_file"] = source_file
+    if history_id:
+        metadata["history_id"] = history_id
     doc = Document(page_content=text, metadata=metadata)
     chunks = SPLITTER.split_documents([doc])
     add_documents_to_store(chunks)
     return len(chunks)
+
+
+
+def delete_history_chunks(history_id: str, org_id: str) -> bool:
+    """Remove every vector belonging to one history document.
+
+    Both conditions are required. Filtering on history_id alone would let a
+    crafted id reach another tenant's vectors; org_id is the access check, not a
+    tidiness measure.
+
+    Returns False when the delete could not be performed, so the caller can
+    refuse to remove the database row - a row deleted while its vectors survive
+    is worse than one that was never deleted, because the evidence keeps
+    influencing reviews with nothing left to point at it.
+    """
+    if not history_id or not org_id:
+        return False
+    try:
+        ensure_collection()
+        qdrant_client.delete(
+            collection_name=COLLECTION,
+            points_selector=Filter(must=[
+                FieldCondition(key="metadata.org_id", match=MatchValue(value=org_id)),
+                FieldCondition(key="metadata.history_id", match=MatchValue(value=history_id)),
+            ]),
+        )
+        return True
+    except Exception as e:
+        print(f"delete_history_chunks failed for {history_id}: {type(e).__name__}: {e}")
+        return False
+
+
+def count_history_chunks(history_id: str, org_id: str) -> int:
+    """How many vectors this history document still has. Used to confirm a delete."""
+    try:
+        res = qdrant_client.count(
+            collection_name=COLLECTION,
+            count_filter=Filter(must=[
+                FieldCondition(key="metadata.org_id", match=MatchValue(value=org_id)),
+                FieldCondition(key="metadata.history_id", match=MatchValue(value=history_id)),
+            ]),
+            exact=True,
+        )
+        return res.count
+    except Exception:
+        return -1
 
 
 def load_store() -> int:

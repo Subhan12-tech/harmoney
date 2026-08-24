@@ -179,6 +179,10 @@ async function request<T>(path: string, init: RequestInit, auth: boolean): Promi
   return payload as T;
 }
 
+export function apiDelete<T>(path: string): Promise<T> {
+  return request<T>(path, { method: "DELETE" }, true);
+}
+
 export function apiPost<T>(path: string, body?: unknown, auth = false): Promise<T> {
   return request<T>(path, { method: "POST", body: JSON.stringify(body ?? {}) }, auth);
 }
@@ -417,4 +421,18 @@ export function sendVerificationCode(email: string): Promise<SendCodeResult> {
 
 export function checkVerificationCode(email: string, code: string): Promise<{ status: string }> {
   return apiPost<{ status: string }>("/api/auth/check-code", { email, code });
+}
+
+/* ============================================================
+   Deleting. Admin only, and irreversible.
+   ============================================================ */
+
+/** Removes the document and every review of it. Evidence it contributed stays. */
+export function deleteDocument(id: string): Promise<{ document: string; reviews_removed: number }> {
+  return apiDelete(`/api/documents/${encodeURIComponent(id)}`);
+}
+
+/** Removes an evidence document AND its passages from the search index. */
+export function deleteEvidence(id: string): Promise<{ document: string; passages_removed: number }> {
+  return apiDelete(`/api/history/${encodeURIComponent(id)}`);
 }
