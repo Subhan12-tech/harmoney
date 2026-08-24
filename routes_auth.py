@@ -240,9 +240,15 @@ def send_code(body: SendCodeIn):
         # whose logs you may not be reading.
         reason = emailer.last_send_error()
         if DEMO_SHOW_CODES or APP_ENV != "production":
-            return {"status": "demo",
-                    "detail": "Email is not configured, so the code is shown here instead.",
-                    "dev_code": code}
+            # Carry the provider's reason even here. Demo mode used to swallow
+            # it, so "is the provider working again yet?" became unanswerable
+            # without turning demo mode off - and the message said "not
+            # configured" when the provider was configured and refusing.
+            reason = emailer.last_send_error()
+            detail = ("Email could not be sent, so the code is shown here instead."
+                      if reason else "Email is not configured, so the code is shown here instead.")
+            return {"status": "demo", "detail": detail, "dev_code": code,
+                    **({"reason": reason, "transport": emailer.transport()} if reason else {})}
         return {"status": "not_sent",
                 "detail": "Verification email could not be sent, so this step is skipped. Continue.",
                 **({"reason": reason} if reason else {})}
