@@ -190,10 +190,15 @@ export function Header() {
                 height: 32,
                 borderRadius: "50%",
                 background: "var(--surface-2)",
-                color: "var(--on-accent)",
-                fontSize: 12,
-                fontWeight: 700,
-                border: "none",
+                // --on-accent is the colour for text sitting ON a filled accent
+                // surface. This background stopped being the accent gradient in
+                // the restyle, so it was near-black text on a near-black film -
+                // invisible in dark mode. --text is what belongs on a surface.
+                color: "var(--text)",
+                border: "1px solid var(--border)",
+                fontSize: 11.5,
+                fontWeight: 600,
+                letterSpacing: "0.01em",
                 cursor: "pointer",
               }}
             >

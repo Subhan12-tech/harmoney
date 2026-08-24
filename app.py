@@ -159,6 +159,82 @@ def search(q: str, user: User = Depends(current_user), org_id: str = Depends(cur
     return {"related": harmony.retrieve_context(q, k=5)}
 
 
+
+# ----------------------------------------------------------------------------
+# IMAGES
+# ----------------------------------------------------------------------------
+# Read text out of a screenshot or photograph with a vision model rather than a
+# local OCR engine. Tesseract would mean a system binary in the image and a
+# second thing to keep installed; a vision model is one HTTPS call, needs no
+# system dependency, and handles a photographed page or a slide far better than
+# classical OCR does.
+IMAGE_TYPES = (".png", ".jpg", ".jpeg", ".webp", ".gif")
+VISION_MODEL = _os_cors.getenv("HARMONY_VISION_MODEL", "pixtral-12b-2409")
+# Guard the request size: a large photo becomes a very large base64 payload.
+MAX_IMAGE_BYTES = int(_os_cors.getenv("HARMONY_MAX_IMAGE_BYTES", str(8 * 1024 * 1024)))
+
+
+def _mime_for(name: str) -> str:
+    n = (name or "").lower()
+    if n.endswith(".png"):
+        return "image/png"
+    if n.endswith(".webp"):
+        return "image/webp"
+    if n.endswith(".gif"):
+        return "image/gif"
+    return "image/jpeg"
+
+
+def _text_from_image(filename: str, data: bytes) -> str:
+    """Transcribe an image. Returns "" if it cannot be read."""
+    import base64
+    import json as _json
+    import urllib.error
+    import urllib.request
+
+    key = _os_cors.getenv("MISTRAL_API_KEY", "").strip()
+    if not key:
+        print("image upload: MISTRAL_API_KEY not set - cannot read images")
+        return ""
+    if len(data) > MAX_IMAGE_BYTES:
+        print(f"image upload: {filename} is {len(data)//1024}KB, over the "
+              f"{MAX_IMAGE_BYTES//1024}KB limit")
+        return ""
+
+    uri = f"data:{_mime_for(filename)};base64,{base64.b64encode(data).decode()}"
+    payload = _json.dumps({
+        "model": VISION_MODEL,
+        "temperature": 0,
+        "messages": [{
+            "role": "user",
+            "content": [
+                {"type": "text", "text":
+                    "Transcribe every word of text in this image, exactly as written. "
+                    "Preserve numbers, percentages, dates and currency exactly - they are "
+                    "the point of the document. Keep the reading order and paragraph "
+                    "breaks. Do not summarise, explain, or add anything that is not "
+                    "written in the image. If there is no text, reply with nothing."},
+                {"type": "image_url", "image_url": uri},
+            ],
+        }],
+    }).encode()
+
+    req = urllib.request.Request(
+        "https://api.mistral.ai/v1/chat/completions", data=payload, method="POST",
+        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=90) as r:
+            body = _json.loads(r.read().decode())
+        return (body["choices"][0]["message"]["content"] or "").strip()
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode(errors="replace")[:200]
+        print(f"image upload: vision model returned {e.code}: {detail}")
+        return ""
+    except Exception as e:
+        print(f"image upload: {type(e).__name__}: {e}")
+        return ""
+
+
 def _extract_text(filename: str, data: bytes) -> str:
     # ek file (pdf/txt/docx) se plain text nikaalta hai
     import io
@@ -173,6 +249,10 @@ def _extract_text(filename: str, data: bytes) -> str:
         from docx import Document as _Docx
         d = _Docx(io.BytesIO(data))
         return "\n".join(p.text for p in d.paragraphs)
+    if name.endswith(IMAGE_TYPES):
+        return _text_from_image(filename, data)
+    if name.endswith(".md") or name.endswith(".csv"):
+        return data.decode("utf-8-sig", errors="replace")
     return ""
 
 

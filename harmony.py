@@ -128,6 +128,18 @@ class IssueItem(BaseModel):
     suggestion: str = Field(description="A safer, aligned rewording of the flagged sentence. Advisory only — never invent facts.")
 
 
+
+class IssueVerdict(BaseModel):
+    index: int = Field(description="The candidate number being judged.")
+    contradicts: bool = Field(
+        description="True ONLY if the prior statement genuinely conflicts with the draft sentence.")
+    why: str = Field(description="One short sentence.")
+
+
+class VerdictList(BaseModel):
+    verdicts: list[IssueVerdict] = Field(default_factory=list)
+
+
 class IssuesList(BaseModel):
     issues: list[IssueItem] = Field(default_factory=list)
 
@@ -974,7 +986,11 @@ Rules:
             "suggestion": it.suggestion,
         })
 
-    print(f"\n========== STRUCTURED ISSUES ==========\n{len(verified)}/{len(result.issues)} issues passed grounding verification\n========================================\n")
+    # Grounding says the quote is real and locatable. Verification asks the
+    # separate question of whether it actually contradicts anything.
+    verified = _verify_issues(verified)
+
+    print(f"\n========== STRUCTURED ISSUES ==========\n{len(verified)}/{len(result.issues)} issues passed grounding and verification\n========================================\n")
 
     return {"issues": verified, "evidence": evidence_list,
             "messages": [{"role": "assistant", "content": f"Identified {len(verified)} evidence-grounded issue(s)."}]}
@@ -983,6 +999,87 @@ Rules:
 # ============================================================================
 # NODE 8 — FINAL REVIEW AGENT
 # ============================================================================
+
+
+def _verify_issues(candidates: list[dict]) -> list[dict]:
+    """Second pass: judge each candidate in isolation, keep only real conflicts.
+
+    The extractor is asked to FIND problems, and a model asked to find problems
+    finds them. Measured on the benchmark, it reported false findings on clean
+    documents at 100% confidence - the same confidence it gave real ones - so
+    there is no threshold that separates them. Confidence is not a signal here.
+
+    What changes the answer is the question. Asked "does this specific prior
+    statement contradict this specific sentence?", with no instruction to
+    produce findings and nothing else in view, the model judges rather than
+    generates. One batched call for all candidates, so the cost is a single
+    extra request per review regardless of how many were proposed.
+
+    On failure the candidates pass through unchanged: a verifier that cannot be
+    reached must not silently delete real findings.
+    """
+    if not candidates:
+        return candidates
+
+    listing = "\n\n".join(
+        f"CANDIDATE {i}\n"
+        f"  Draft sentence : {c['quote']}\n"
+        f"  Prior statement: {c['evidence_quote']}"
+        for i, c in enumerate(candidates)
+    )
+
+    prompt = f"""You are checking whether each pair below is a genuine contradiction.
+
+{listing}
+
+For each candidate, answer whether the PRIOR STATEMENT actually conflicts with the
+DRAFT SENTENCE.
+
+Answer contradicts=true when both refer to the SAME fact and say DIFFERENT
+things about it - a different number for the same measure, a reversed position, a
+changed date or status.
+
+NUMBERS ARE EXACT. If the draft and the prior statement give different figures
+for the same measure, that is a contradiction NO MATTER HOW SMALL the difference
+or how the draft hedges it. "approximately 0.9%" against a prior "0.8%" IS a
+contradiction - the hedge does not make the numbers agree, and a reader takes
+away a different figure. Only identical figures count as a restatement.
+
+AN ASSERTION OF NO CHANGE IS A CLAIM. If the prior statement says something was
+unchanged, not revised, or reaffirmed, and the draft says that same thing has
+now changed, been revised or been updated, that IS a contradiction. So is the
+reverse. "We have not revised that position" against "the position is now X" is
+a conflict, not silence.
+
+Answer contradicts=false when:
+- they concern different subjects, periods or entities
+- the prior statement neither confirms nor denies the draft sentence
+- the draft simply restates or is consistent with the prior statement
+- the draft says something the prior statement does not address at all
+
+Being unverifiable is NOT a contradiction. Restating a prior fact accurately is
+NOT a contradiction. When the two are merely related, answer false."""
+
+    try:
+        verdicts = model.with_structured_output(VerdictList).invoke(prompt).verdicts
+    except Exception as e:
+        print(f"  verification pass unavailable ({type(e).__name__}) - keeping all candidates")
+        return candidates
+
+    keep_flags = {v.index: v.contradicts for v in verdicts}
+    kept = []
+    for i, c in enumerate(candidates):
+        # Unjudged candidates are kept: silence from the verifier is not a
+        # rejection.
+        if keep_flags.get(i, True):
+            kept.append(c)
+        else:
+            why = next((v.why for v in verdicts if v.index == i), "")
+            print(f"  verifier rejected: {c['quote'][:56]!r} - {why[:70]}")
+    if len(kept) != len(candidates):
+        print(f"  verification: {len(kept)}/{len(candidates)} candidates survived")
+    return kept
+
 
 def _final_review_prompt(state: AgentState) -> tuple[str, float]:
     consistency_summary = state["consistency_summary"]

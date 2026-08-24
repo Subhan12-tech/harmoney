@@ -113,7 +113,7 @@ export default function DocumentsPage() {
             title="Evidence library"
             description="Old documents - things you have already published. These are never reviewed; they are what future drafts get checked against."
             dropHint="or drop a folder here"
-            meta={["PDF · DOCX · TXT · MD · HTML", "Up to 5 GB", "Encrypted at rest"]}
+            meta={["PDF · DOCX · TXT · MD · CSV · images", "Screenshots and photos are read too", "Encrypted at rest"]}
             onDropFiles={(files) => addFiles(files, "corpus")}
             actions={
               <>
@@ -172,7 +172,7 @@ export default function DocumentsPage() {
         hidden
         aria-hidden="true"
         tabIndex={-1}
-        accept=".pdf,.docx,.txt,.md,.html"
+        accept=".pdf,.docx,.txt,.md,.csv,.html,.png,.jpg,.jpeg,.webp"
         onChange={(e) => {
           handlePicked(e.target.files, "corpus");
           e.target.value = "";

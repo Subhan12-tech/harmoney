@@ -29,11 +29,14 @@ export function SubmitDraftPanel() {
     if (!files?.length) return;
     setError(null);
     setBusy(true);
-    setStage("Extracting text…");
+    setStage(files[0]?.name.match(/\.(png|jpe?g|webp|gif)$/i) ? "Reading the image…" : "Extracting text…");
     try {
       const r = await uploadForText(Array.from(files));
       if (!r.text?.trim()) {
-        setError("No readable text in that file. PDF, DOCX, TXT and MD are supported.");
+        setError(
+          "No readable text in that file. PDF, DOCX, TXT, MD, CSV and images (PNG, JPG, WEBP) are supported. " +
+          "For an image, make sure the text is legible.",
+        );
         return;
       }
       setText(r.text);
@@ -135,7 +138,7 @@ export function SubmitDraftPanel() {
           <input
             ref={fileInput}
             type="file"
-            accept=".pdf,.docx,.txt,.md"
+            accept=".pdf,.docx,.txt,.md,.csv,.png,.jpg,.jpeg,.webp"
             hidden
             onChange={(e) => {
               void pickFile(e.target.files);
@@ -148,7 +151,7 @@ export function SubmitDraftPanel() {
             onClick={() => fileInput.current?.click()}
             style={{ ...secondaryButtonStyle, fontFamily: "inherit", opacity: busy ? 0.6 : 1 }}
           >
-            Upload a file
+            Upload file or image
           </button>
           <button
             type="button"
