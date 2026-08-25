@@ -19,6 +19,60 @@ from auth import (hash_password, verify_password, create_token, current_user,
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
+# ----------------------------------------------------------------------------
+# LOGIN THROTTLE — slow password guessing to a crawl.
+# ----------------------------------------------------------------------------
+# Without this, /login answers wrong passwords as fast as they arrive, so a
+# stolen email plus a wordlist is an online brute force at network speed. A
+# sliding window keyed by (ip, email) caps that: a handful of tries, then a
+# cooldown that the attacker cannot avoid by varying the password.
+#
+# In-memory on purpose. It is a mitigation, not an audit trail - a process
+# restart clearing it is acceptable, and it needs no table or migration. The
+# free tier runs a single worker, so one dict is authoritative; a multi-worker
+# or multi-instance deploy should move this to Redis, which is why the numbers
+# are env-tunable rather than baked in. It never blocks a CORRECT password:
+# success clears the counter immediately, so a legitimate user who mistyped a
+# few times is fine the moment they get it right.
+import threading as _threading
+import time as _time
+
+LOGIN_MAX_FAILS = int(os.getenv("HARMONY_LOGIN_MAX_FAILS", "8"))
+LOGIN_WINDOW_SECONDS = int(os.getenv("HARMONY_LOGIN_WINDOW_SECONDS", "300"))
+_login_fails: dict[str, list[float]] = {}
+_login_lock = _threading.Lock()
+
+
+def _login_key(ip: str, email: str) -> str:
+    return f"{ip}|{(email or '').strip().lower()}"
+
+
+def _login_check(ip: str, email: str):
+    """Raise 429 if this (ip, email) has failed too many times recently."""
+    now = _time.monotonic()
+    cutoff = now - LOGIN_WINDOW_SECONDS
+    key = _login_key(ip, email)
+    with _login_lock:
+        hits = [t for t in _login_fails.get(key, []) if t > cutoff]
+        _login_fails[key] = hits
+        if len(hits) >= LOGIN_MAX_FAILS:
+            retry = int(hits[0] + LOGIN_WINDOW_SECONDS - now) + 1
+            raise HTTPException(
+                429, f"Too many failed sign-in attempts. Try again in {retry}s.")
+
+
+def _login_record_fail(ip: str, email: str):
+    now = _time.monotonic()
+    key = _login_key(ip, email)
+    with _login_lock:
+        _login_fails.setdefault(key, []).append(now)
+
+
+def _login_clear(ip: str, email: str):
+    with _login_lock:
+        _login_fails.pop(_login_key(ip, email), None)
+
+
 def _slug(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or "org"
 
@@ -98,12 +152,23 @@ def signup(body: SignupIn, request: Request):
 
 @router.post("/login")
 def login(body: LoginIn, request: Request):
+    ip = request.client.host if request.client else ""
+    # Before checking the password: has this (ip, email) been guessing? A 429
+    # here is what turns an unlimited online brute force into a few tries per
+    # window. Checked on the email as SENT so an attacker cannot dodge it by
+    # varying case or whitespace - _login_key lower-strips it.
+    _login_check(ip, body.email)
     with Session(engine) as s:
         user = s.exec(select(User).where(User.email == body.email)).first()
         if not user or not verify_password(body.password, user.password_hash):
+            # Record the failure OUTSIDE the "user exists" branch, so guessing a
+            # non-existent address is throttled too - otherwise the throttle
+            # doubles as an account-enumeration oracle.
+            _login_record_fail(ip, body.email)
             raise HTTPException(401, "Invalid credentials.")
         if not user.is_active:
             raise HTTPException(403, "Account suspended.")
+        _login_clear(ip, body.email)   # correct password: reset the counter
         # Promote the configured platform owner on sight, so the account works
         # even if PLATFORM_OWNER_EMAIL was set after they first signed up.
         if is_platform_owner(user.email) and not user.is_superadmin:

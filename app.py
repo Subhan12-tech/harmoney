@@ -110,10 +110,6 @@ class IngestText(BaseModel):
     company: str | None = "Unknown"
 
 
-class IngestPath(BaseModel):
-    path: str
-
-
 class ReviewIn(BaseModel):
     draft: str
 
@@ -158,13 +154,16 @@ def ingest_text(body: IngestText, user: User = Depends(require_role("editor")),
     return {"status": "ok", "detail": "Statement added to history."}
 
 
-@app.post("/api/ingest_path")
-def ingest_path(body: IngestPath, user: User = Depends(require_role("editor")),
-                org_id: str = Depends(current_org_id)):
-    harmony.set_org(org_id)
-    res = harmony.ingestion_agent({"messages": [{"role": "user", "content": body.path}]})
-    audit(org_id, user.id, "history.ingested", body.path)
-    return {"status": "ok", "detail": res["messages"][-1]["content"]}
+# NOTE: there used to be a POST /api/ingest_path here that fed a server-side
+# path straight into ingestion_agent(), which open()s whatever it is given. A
+# security pass proved it was an arbitrary file read: any editor - and in
+# open-signup mode that is every self-registered user, since each owns their org
+# - could ingest .env, auth.py, or C:\Windows\win.ini and then read the contents
+# back through /api/search. It was removed rather than patched: the browser
+# never called it (the UI uploads bytes via /api/upload, which never touches the
+# filesystem), so nothing legitimate is lost. The equivalent operator workflow
+# still exists in harmony.py's __main__ CLI, where reading local files is the
+# point and there is no untrusted caller.
 
 
 @app.get("/api/search")
@@ -186,6 +185,25 @@ IMAGE_TYPES = (".png", ".jpg", ".jpeg", ".webp", ".gif")
 VISION_MODEL = _os_cors.getenv("HARMONY_VISION_MODEL", "pixtral-12b-2409")
 # Guard the request size: a large photo becomes a very large base64 payload.
 MAX_IMAGE_BYTES = int(_os_cors.getenv("HARMONY_MAX_IMAGE_BYTES", str(8 * 1024 * 1024)))
+
+# Cap on ANY single uploaded file. Only images were bounded before, so a 500MB
+# .txt or .pdf was read whole into memory with await f.read() - one request
+# could exhaust the free tier. read(cap+1) never pulls more than the cap into
+# memory, so an oversized file is refused by its length rather than by first
+# loading all of it. Default 25MB comfortably clears a large PDF.
+MAX_UPLOAD_BYTES = int(_os_cors.getenv("HARMONY_MAX_UPLOAD_BYTES", str(25 * 1024 * 1024)))
+
+
+async def _read_capped(f) -> bytes | None:
+    """Read an upload, or None if it exceeds MAX_UPLOAD_BYTES.
+
+    Reads one byte past the cap so "exactly at the cap" is allowed and anything
+    larger is detectable without ever holding the whole oversized file.
+    """
+    data = await f.read(MAX_UPLOAD_BYTES + 1)
+    if len(data) > MAX_UPLOAD_BYTES:
+        return None
+    return data
 
 
 def _mime_for(name: str) -> str:
@@ -278,7 +296,10 @@ async def upload(files: list[UploadFile] = File(...),
     parts = []
     skipped = []
     for f in files:
-        data = await f.read()
+        data = await _read_capped(f)
+        if data is None:
+            skipped.append(f"{f.filename} (over {MAX_UPLOAD_BYTES // (1024*1024)}MB)")
+            continue
         text = _extract_text(f.filename, data)
         if text.strip():
             parts.append(f"### {f.filename}\n{text}")
@@ -302,7 +323,10 @@ async def upload_history(files: list[UploadFile] = File(...), company: str = For
     added = []
     skipped = []
     for f in files:
-        data = await f.read()
+        data = await _read_capped(f)
+        if data is None:
+            skipped.append(f"{f.filename} (over {MAX_UPLOAD_BYTES // (1024*1024)}MB)")
+            continue
         text = _extract_text(f.filename, data)
         if text.strip():
             hid = _new_history_id()
