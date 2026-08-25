@@ -142,6 +142,46 @@ def _record_history_item(org_id: str, user_id: str, company: str, source_file: s
         s.commit()
 
 
+# Whether a reviewed draft is remembered so the NEXT draft is checked against it.
+# On by default: without it, a review only ever compares a draft to PUBLISHED
+# history, so two unpublished drafts that contradict each other BOTH pass - which
+# is exactly the "sequel draft" gap. Set HARMONY_INDEX_DRAFTS=false to go back to
+# publish-only comparison.
+INDEX_REVIEWED_DRAFTS = _os_cors.getenv("HARMONY_INDEX_DRAFTS", "true").strip().lower() == "true"
+
+
+def _index_reviewed_draft(result: dict, org_id: str, user_id: str):
+    """Add a just-reviewed draft to the evidence library.
+
+    This is what makes a series of drafts consistency-checked against each other.
+    A draft used to enter the library ONLY when approved, so a second draft that
+    contradicted an earlier UNPUBLISHED one was never caught - the earlier draft
+    was not there to contradict.
+
+    Indexed AFTER its own review (so a draft never flags itself) and tagged
+    doc_type="draft", not "approved": it shows in the Evidence Library as an
+    unpublished draft and can be deleted like anything else.
+
+    Why this does not spray false positives across unrelated future drafts:
+    retrieve_context() applies a relevance floor, so a draft that is not
+    genuinely about the same subject scores below it and is never retrieved as
+    evidence. Only a real successor - a sequel on the same topic - is pulled in,
+    which is the whole point.
+    """
+    if not INDEX_REVIEWED_DRAFTS:
+        return
+    text = (result.get("draft_text") or "").strip()
+    if not text:
+        return
+    company = result.get("company") or "Unknown"
+    topic = (result.get("draft_topic") or "").strip()
+    label = f"Draft — {topic}" if topic else "Draft under review"
+    hid = _new_history_id()
+    n = harmony.add_to_history(text, company=company, doc_type="draft",
+                               source_file=label, history_id=hid)
+    _record_history_item(org_id, user_id, company, label, "draft", n, hid)
+
+
 @app.post("/api/ingest_text")
 def ingest_text(body: IngestText, user: User = Depends(require_role("editor")),
                 org_id: str = Depends(current_org_id)):
@@ -395,6 +435,7 @@ def review(body: ReviewIn, user: User = Depends(require_role("editor")),
     # login + editor+ role zaroori. Org-scoped review (sirf is org ki history se compare).
     result = harmony.run_review(body.draft, org_id=org_id)
     payload = _persist_review(result, org_id, user.id)
+    _index_reviewed_draft(result, org_id, user.id)   # so the next draft is checked against this one
     audit(org_id, user.id, "review.created", result["company"])
     return payload
 
@@ -412,6 +453,7 @@ def review_stream(body: ReviewIn, user: User = Depends(require_role("editor")),
             for event in harmony.run_review_stream(body.draft, org_id=org_id):
                 if event.get("type") == "done":
                     payload = _persist_review(event["result"], org_id, user_id)
+                    _index_reviewed_draft(event["result"], org_id, user_id)   # next draft checks against this one
                     audit(org_id, user_id, "review.created", event["result"].get("company", ""))
                     yield f"data: {json.dumps({'type': 'done', 'result': payload})}\n\n"
                 else:

@@ -123,6 +123,11 @@ export function EvidenceList() {
                     from an approved draft
                   </span>
                 )}
+                {row.doc_type === "draft" && (
+                  <span style={{ color: "var(--faint)", fontSize: 11, marginLeft: 8 }}>
+                    unpublished draft
+                  </span>
+                )}
               </td>
               <td>{row.company}</td>
               <td>{row.chunk_count}</td>
