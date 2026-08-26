@@ -161,11 +161,15 @@ def analytics(org_id: str = Depends(current_org_id), user: User = Depends(curren
 
     # severity breakdown — from every flagged issue across every review (real, evidence-grounded data)
     sev_counts = {"High": 0, "Medium": 0, "Low": 0}
+    total_issues = 0
+    issues_per_review: dict = {}
     for r in reviews:
         try:
             issues = json.loads(r.issues_json or "[]")
         except (json.JSONDecodeError, TypeError):
             issues = []
+        issues_per_review[r.id] = len(issues)
+        total_issues += len(issues)
         for it in issues:
             sev_counts[{"high": "High", "medium": "Medium", "low": "Low"}.get(it.get("severity"), "Low")] += 1
 
@@ -174,8 +178,31 @@ def analytics(org_id: str = Depends(current_org_id), user: User = Depends(curren
     for d in docs:
         type_counts[d.doc_type] = type_counts.get(d.doc_type, 0) + 1
 
-    # consistency-score trend — most recent 6 reviews, in order
-    trend = [{"rating": r.average_rating, "at": str(r.created_at)} for r in reviews[-6:]]
+    # document RISK breakdown — how many documents currently sit at each risk level
+    risk_counts = {"High": 0, "Medium": 0, "Low": 0}
+    for d in docs:
+        risk_counts[d.risk if d.risk in risk_counts else "Low"] += 1
+
+    # headline totals — the four numbers a customer wants at a glance
+    decided = [r for r in reviews if r.status in ("approved", "rejected")]
+    approved = [r for r in decided if r.status == "approved"]
+    ratings = [r.average_rating for r in reviews if r.average_rating]
+    published = sum(1 for d in docs if d.status == "Published")
+    totals = {
+        "reviews": len(reviews),
+        "issues": total_issues,
+        # average consistency on a 0-100 scale (ratings are stored 0-10)
+        "avg_consistency": round((sum(ratings) / len(ratings)) * 10) if ratings else 0,
+        "approval_rate": round(100 * len(approved) / len(decided)) if decided else 0,
+        "published": published,
+        "avg_issues_per_review": round(total_issues / len(reviews), 1) if reviews else 0,
+    }
+
+    # consistency-score trend — most recent 12 reviews, in order, each carrying
+    # the issue count so the UI can plot findings alongside the score.
+    trend = [{"rating": r.average_rating, "at": str(r.created_at),
+              "issues": issues_per_review.get(r.id, 0),
+              "company": r.company or ""} for r in reviews[-12:]]
 
     # review performance — grouped by who decided each review
     perf: dict = {}
@@ -199,8 +226,10 @@ def analytics(org_id: str = Depends(current_org_id), user: User = Depends(curren
     review_performance.sort(key=lambda x: -x["decided"])
 
     return {
+        "totals": totals,
         "severity_breakdown": [{"label": k, "count": v} for k, v in sev_counts.items()],
         "type_breakdown": [{"label": k, "count": v} for k, v in sorted(type_counts.items(), key=lambda x: -x[1])],
+        "risk_breakdown": [{"label": k, "count": v} for k, v in risk_counts.items()],
         "score_trend": trend,
         "review_performance": review_performance,
     }

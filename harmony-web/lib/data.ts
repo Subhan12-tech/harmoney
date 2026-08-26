@@ -833,78 +833,81 @@ export interface ReviewerPerformance {
   rate: string;
 }
 
+export interface AnalyticsTotals {
+  reviews: number;
+  issues: number;
+  /** Average consistency on a 0–100 scale. */
+  avgConsistency: number;
+  approvalRate: number;
+  published: number;
+  avgIssuesPerReview: number;
+}
+
+export interface TrendPoint {
+  /** Consistency for this review, 0–100. */
+  score: number;
+  issues: number;
+  label: string;
+  company: string;
+}
+
 export interface AnalyticsSnapshot {
+  totals: AnalyticsTotals;
+  trend: TrendPoint[];
+  /** Kept for the compact sparkline callers; derived from `trend`. */
   scores: number[];
   months: string[];
   severity: SeverityBar[];
   types: TypeBar[];
+  /** Documents by current risk level — same shape/tokens as severity. */
+  risk: SeverityBar[];
   performance: ReviewerPerformance[];
 }
 
-const ANALYTICS_BY_ORG: Record<string, AnalyticsSnapshot> = {
-  acme: {
-    scores: CONSISTENCY_SCORES,
-    months: CONSISTENCY_MONTHS,
-    severity: SEVERITY_BARS,
-    types: TYPE_BARS,
-    performance: REVIEW_PERF,
-  },
-  globex: {
-    scores: [64, 68, 67, 73, 78, 81],
-    months: CONSISTENCY_MONTHS,
-    severity: [
-      { label: "High", count: 4, width: 12, token: "var(--danger)" },
-      { label: "Medium", count: 19, width: 42, token: "var(--warn)" },
-      { label: "Low", count: 31, width: 68, token: "var(--accent-2)" },
-    ],
-    types: [
-      { label: "Regulatory Filing", count: 18, width: 60 },
-      { label: "Press Release", count: 12, width: 40 },
-      { label: "Earnings Release", count: 11, width: 37 },
-      { label: "Corporate Statement", count: 8, width: 27 },
-      { label: "Investor Letter", count: 5, width: 17 },
-    ],
-    performance: [
-      { name: "Priya Shah", time: "2.6h", rate: "93%" },
-      { name: "Marcus Webb", time: "4.2h", rate: "89%" },
-      { name: "Elena Torres", time: "3.1h", rate: "92%" },
-      { name: "David Okafor", time: "5.0h", rate: "84%" },
-    ],
-  },
-  demo: {
-    scores: [88, 90, 89, 91, 92, 93],
-    months: CONSISTENCY_MONTHS,
-    severity: [
-      { label: "High", count: 1, width: 6, token: "var(--danger)" },
-      { label: "Medium", count: 6, width: 32, token: "var(--warn)" },
-      { label: "Low", count: 17, width: 88, token: "var(--accent-2)" },
-    ],
-    types: [
-      { label: "Earnings Release", count: 9, width: 60 },
-      { label: "Press Release", count: 7, width: 47 },
-      { label: "Investor Letter", count: 5, width: 33 },
-      { label: "Regulatory Filing", count: 2, width: 13 },
-      { label: "Corporate Statement", count: 1, width: 7 },
-    ],
-    performance: [
-      { name: "Priya Shah", time: "1.2h", rate: "100%" },
-      { name: "Riley Chen", time: "1.6h", rate: "100%" },
-    ],
-  },
-};
 
 export async function getAnalytics(_orgId: string): Promise<AnalyticsSnapshot> {
   const a = await apiGet<{
+    totals?: {
+      reviews: number; issues: number; avg_consistency: number;
+      approval_rate: number; published: number; avg_issues_per_review: number;
+    };
     severity_breakdown: { label: string; count: number }[];
     type_breakdown: { label: string; count: number }[];
-    score_trend: { rating: number; at: string }[];
+    risk_breakdown?: { label: string; count: number }[];
+    score_trend: { rating: number; at: string; issues?: number; company?: string }[];
     review_performance: { name: string; avg_minutes: number; approval_rate: number }[];
   }>("/api/analytics");
 
   const maxSeverity = Math.max(1, ...a.severity_breakdown.map((r) => r.count));
   const maxType = Math.max(1, ...a.type_breakdown.map((r) => r.count));
+  const risk = a.risk_breakdown ?? [];
+  const maxRisk = Math.max(1, ...risk.map((r) => r.count));
+
+  const fmtDate = (at: string) =>
+    new Date(/[Zz]$/.test(at) ? at : `${at.replace(" ", "T")}Z`).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+    });
+
+  const trend: TrendPoint[] = a.score_trend.map((p) => ({
+    score: Math.round(p.rating * 10),
+    issues: p.issues ?? 0,
+    label: fmtDate(p.at),
+    company: p.company ?? "",
+  }));
+
+  const t = a.totals;
 
   return {
+    totals: {
+      reviews: t?.reviews ?? a.score_trend.length,
+      issues: t?.issues ?? a.severity_breakdown.reduce((s, r) => s + r.count, 0),
+      avgConsistency: t?.avg_consistency ?? (trend.length ? Math.round(trend.reduce((s, p) => s + p.score, 0) / trend.length) : 0),
+      approvalRate: t?.approval_rate ?? 0,
+      published: t?.published ?? 0,
+      avgIssuesPerReview: t?.avg_issues_per_review ?? 0,
+    },
+    trend,
     // Bars are percentages of the largest bucket, so an empty workspace renders
     // flat rather than dividing by zero.
     severity: a.severity_breakdown.map((r) => ({
@@ -918,12 +921,14 @@ export async function getAnalytics(_orgId: string): Promise<AnalyticsSnapshot> {
       count: r.count,
       width: Math.round((r.count / maxType) * 100),
     })),
-    scores: a.score_trend.map((p) => Math.round(p.rating * 10)),
-    months: a.score_trend.map((p) =>
-      new Date(/[Zz]$/.test(p.at) ? p.at : `${p.at.replace(" ", "T")}Z`).toLocaleDateString(undefined, {
-        month: "short",
-      }),
-    ),
+    risk: risk.map((r) => ({
+      label: r.label as Severity,
+      count: r.count,
+      width: Math.round((r.count / maxRisk) * 100),
+      token: SEVERITY_TOKEN[r.label as Severity] ?? "var(--accent-2)",
+    })),
+    scores: trend.map((p) => p.score),
+    months: trend.map((p) => p.label),
     performance: a.review_performance.map((r) => ({
       name: r.name,
       time: r.avg_minutes >= 60 ? `${(r.avg_minutes / 60).toFixed(1)}h` : `${r.avg_minutes}m`,
