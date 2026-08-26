@@ -93,9 +93,29 @@ class Invite(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+class Folder(SQLModel, table=True):
+    # A node in the workspace's folder tree. The hierarchy is relational, not a
+    # JSON blob: parent_folder_id points at another Folder (NULL for a root),
+    # which is what lets folders be moved, renamed, and permission-checked as
+    # first-class rows. org_id IS the workspace scope and the tenant boundary -
+    # every read and write filters on it, so a folder_id from the client can
+    # never reach another workspace's tree.
+    id: str = Field(default_factory=_uuid, primary_key=True)
+    org_id: str = Field(index=True)
+    parent_folder_id: str | None = Field(default=None, index=True)   # NULL = root folder
+    name: str = "Untitled"
+    created_by: str = ""
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 class Document(SQLModel, table=True):
     id: str = Field(default_factory=_uuid, primary_key=True)
     org_id: str = Field(index=True)
+    # Where the document lives in the workspace tree. NULL = workspace root
+    # (unorganised). This is ORGANISATION, kept deliberately separate from
+    # `status` (lifecycle) - publishing changes status, never folder_id.
+    folder_id: str | None = Field(default=None, index=True)
     title: str = "Untitled"
     doc_type: str = "Press Release"
     status: str = "In Review"     # Draft / In Review / Changes Requested / Approved / Published / Archived
@@ -222,7 +242,8 @@ class HistoryItem(SQLModel, table=True):
 _COLUMN_PATCHES = {
     "user": [("avatar", "VARCHAR NOT NULL DEFAULT ''"),
              ("auth_provider", "VARCHAR NOT NULL DEFAULT 'password'")],
-    "document": [("risk", "VARCHAR NOT NULL DEFAULT 'Low'")],
+    "document": [("risk", "VARCHAR NOT NULL DEFAULT 'Low'"),
+                 ("folder_id", "VARCHAR NULL")],
     "review": [("issues_json", "VARCHAR NOT NULL DEFAULT '[]'"),
                ("evidence_json", "VARCHAR NOT NULL DEFAULT '[]'")],
     "emailcode": [("delivered", "BOOLEAN NOT NULL DEFAULT FALSE")],

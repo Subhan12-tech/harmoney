@@ -38,13 +38,21 @@ def _latest_reviews_by_doc(doc_ids: list[str]) -> dict:
 
 @router.get("/documents")
 def list_documents(org_id: str = Depends(current_org_id), user: User = Depends(current_user),
-                   status: str | None = None, doc_type: str | None = None):
+                   status: str | None = None, doc_type: str | None = None,
+                   folder_id: str | None = None):
+    # folder_id filter: a real id restricts to that folder; the literal "root"
+    # restricts to unorganised documents (folder_id IS NULL); omitted returns
+    # the whole workspace, which is what the flat "All documents" view wants.
     with Session(engine) as s:
         q = select(Document).where(Document.org_id == org_id)
         if status:
             q = q.where(Document.status == status)
         if doc_type:
             q = q.where(Document.doc_type == doc_type)
+        if folder_id == "root":
+            q = q.where(Document.folder_id.is_(None))
+        elif folder_id:
+            q = q.where(Document.folder_id == folder_id)
         docs = s.exec(q.order_by(Document.created_at.desc())).all()
 
     names = _user_names(org_id)

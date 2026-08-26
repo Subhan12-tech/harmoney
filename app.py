@@ -25,7 +25,7 @@ from datetime import datetime
 from sqlmodel import Session
 from sqlalchemy import text as _sa_text
 from db import init_db, engine, User, Document, Review, HistoryItem
-import routes_auth, routes_org, routes_documents, routes_security, routes_billing, routes_sso, routes_admin
+import routes_auth, routes_org, routes_documents, routes_security, routes_billing, routes_sso, routes_admin, routes_folders
 from routes_auth import audit
 from auth import current_user, current_org_id, require_role, user_membership
 
@@ -69,7 +69,7 @@ else:
     print(f"EMAIL: {_emailer.transport()} ok - verification codes will be sent.")
 for r in (routes_auth.router, routes_org.router, routes_documents.router,
           routes_security.router, routes_billing.router, routes_sso.router,
-          routes_admin.router):
+          routes_admin.router, routes_folders.router):
     app.include_router(r)
 
 # --- Unhandled errors ---
@@ -353,13 +353,25 @@ async def upload(files: list[UploadFile] = File(...),
 
 @app.post("/api/upload_history")
 async def upload_history(files: list[UploadFile] = File(...), company: str = Form("Unknown"),
+                         folder_id: str = Form(""),
                          user: User = Depends(require_role("editor")),
                          org_id: str = Depends(current_org_id)):
     # ek ya kai files (folder) -> har file do jagah jata hai:
     #   1) evidence history (Qdrant) -> future reviews isse compare karenge
     #   2) Document record (DB) -> "My Documents" mein bhi ek "previous draft" ke tor par dikhta hai
     # (koi AI review nahi chalta — ye already-published/historical files hain, review ki zaroorat nahi.)
+    # folder_id (optional): place the created Document rows straight into a folder
+    # the user opened. Validated to belong to THIS workspace before it is used -
+    # an id from the client is never trusted.
     harmony.set_org(org_id)
+    dest_folder = None
+    if folder_id.strip():
+        from db import Folder
+        with Session(engine) as s:
+            f = s.get(Folder, folder_id.strip())
+            if not f or f.org_id != org_id:
+                raise HTTPException(404, "Destination folder not found.")
+            dest_folder = f.id
     added = []
     skipped = []
     for f in files:
@@ -376,7 +388,8 @@ async def upload_history(files: list[UploadFile] = File(...), company: str = For
             title = (f.filename.rsplit(".", 1)[0] if f.filename else "Untitled")
             with Session(engine) as s:
                 s.add(Document(org_id=org_id, title=title, doc_type="Historical Disclosure",
-                               content=text, status="Published", risk="Low", created_by=user.id))
+                               content=text, status="Published", risk="Low", created_by=user.id,
+                               folder_id=dest_folder))
                 s.commit()
             added.append(f.filename)
         else:
