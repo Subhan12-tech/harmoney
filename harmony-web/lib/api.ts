@@ -242,6 +242,72 @@ export function googleLogin(credential: string): Promise<Session> {
 }
 
 /* ============================================================
+   Folders — the workspace document tree
+   ============================================================ */
+
+export interface FolderNode {
+  id: string;
+  parent_folder_id: string | null;
+  name: string;
+  doc_count: number;
+  child_count: number;
+  created_at: string;
+}
+
+export function listFolders(): Promise<{ folders: FolderNode[]; root_doc_count: number }> {
+  return apiGet("/api/folders");
+}
+
+export function createFolder(name: string, parent_folder_id: string | null = null): Promise<{
+  id: string;
+  name: string;
+  parent_folder_id: string | null;
+}> {
+  return apiPost("/api/folders", { name, parent_folder_id }, true);
+}
+
+export function renameFolder(id: string, name: string): Promise<unknown> {
+  return apiPatch(`/api/folders/${encodeURIComponent(id)}`, { name });
+}
+
+/** Move a folder under a new parent (null = workspace root). */
+export function moveFolder(id: string, parent_folder_id: string | null): Promise<unknown> {
+  return apiPatch(`/api/folders/${encodeURIComponent(id)}`, { move: true, parent_folder_id });
+}
+
+export type DeleteStrategy = "parent" | "root" | "all";
+
+export function deleteFolder(id: string, strategy: DeleteStrategy): Promise<{
+  documents_moved: number;
+  documents_deleted: number;
+  folders_removed: number;
+}> {
+  return apiDelete(`/api/folders/${encodeURIComponent(id)}?strategy=${strategy}`);
+}
+
+/** Move a document into a folder (null = workspace root). Never duplicates it. */
+export function moveDocument(docId: string, folder_id: string | null): Promise<unknown> {
+  return apiPost(`/api/documents/${encodeURIComponent(docId)}/move`, { folder_id }, true);
+}
+
+export interface FolderDoc {
+  id: string;
+  title: string;
+  doc_type: string;
+  status: string;
+  risk: string;
+  folder_id: string | null;
+  created_at: string;
+  submitted_by?: string;
+}
+
+/** Documents in one folder — pass "root" for unorganised, omit for the whole workspace. */
+export function listDocumentsInFolder(folderId: string | null): Promise<{ documents: FolderDoc[] }> {
+  const q = folderId === null ? "root" : folderId;
+  return apiGet(`/api/documents?folder_id=${encodeURIComponent(q)}`);
+}
+
+/* ============================================================
    Multipart upload + review submission
    ============================================================ */
 

@@ -11,6 +11,7 @@ import {
   AnalyticsIcon,
   DashboardIcon,
   DocumentsIcon,
+  FolderIcon,
   KnowledgeIcon,
   ReviewIcon,
   SettingsIcon,
@@ -30,6 +31,7 @@ export const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     title: "Workspace",
     items: [
       { href: "/app", label: "Dashboard", icon: DashboardIcon, exact: true },
+      { href: "/app/files", label: "Files", icon: FolderIcon },
       { href: "/app/documents", label: "All Documents", icon: DocumentsIcon },
       { href: "/app/review", label: "Review Workspace", icon: ReviewIcon },
     ],

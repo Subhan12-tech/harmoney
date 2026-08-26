@@ -16,6 +16,7 @@ import { ThemeToggle } from "./ThemeToggle";
 /** Page titles are derived from the URL so the header stays in sync with routing. */
 function titleFor(pathname: string): string {
   if (pathname === "/app") return "Dashboard";
+  if (pathname.startsWith("/app/files")) return "Files";
   if (pathname.startsWith("/app/documents")) return "All Documents";
   if (pathname.startsWith("/app/review")) return "Review Workspace";
   if (pathname.startsWith("/app/knowledge")) return "Evidence Library";
