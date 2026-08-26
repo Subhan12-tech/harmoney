@@ -459,7 +459,8 @@ def read_path_as_text(path: str) -> str:
 
 
 def add_to_history(text: str, company: str = "Unknown", doc_type: str = "approved",
-                   source_file: str | None = None, history_id: str | None = None) -> int:
+                   source_file: str | None = None, history_id: str | None = None,
+                   folder_id: str | None = None) -> int:
     # approved draft (ya koi statement) ko history mein daalta hai (dedup ke saath). Chunk count
     # return karta hai taake caller ek HistoryItem record bana sake (Evidence Library listing ke liye).
     #
@@ -468,11 +469,18 @@ def add_to_history(text: str, company: str = "Unknown", doc_type: str = "approve
     # remove it from the library while its vectors kept steering every future
     # review - present in the evidence, absent from the list, and impossible to
     # find. The tag is what makes deletion actually delete.
+    #
+    # folder_id: which workspace folder this evidence document lives in. Carried
+    # on every chunk so that when a future draft matches this evidence, the
+    # review can tell the user WHICH folder the match came from and offer to file
+    # the published draft alongside it.
     metadata = {"company": company, "date": str(date.today()), "doc_type": doc_type}
     if source_file:
         metadata["source_file"] = source_file
     if history_id:
         metadata["history_id"] = history_id
+    if folder_id:
+        metadata["folder_id"] = folder_id
     doc = Document(page_content=text, metadata=metadata)
     chunks = SPLITTER.split_documents([doc])
     add_documents_to_store(chunks)
@@ -967,10 +975,23 @@ def structured_issues_agent(state: AgentState) -> dict:
         "date": d.metadata.get("date") or "—",
         "source": d.metadata.get("source_file") or d.metadata.get("company") or "Unknown source",
         "doc_type": (d.metadata.get("doc_type") or "history").replace("_", " ").title(),
+        "folder_id": d.metadata.get("folder_id"),
     } for d in docs]
 
+    # Which folder did the evidence come from? Count the folder each matched
+    # chunk belongs to and take the most common - that is the folder whose
+    # documents this draft was actually checked against, offered at publish time
+    # as where to file the approved draft. None if the evidence is unfiled.
+    _folder_votes: dict = {}
+    for d in docs:
+        fid = d.metadata.get("folder_id")
+        if fid:
+            _folder_votes[fid] = _folder_votes.get(fid, 0) + 1
+    suggested_folder_id = max(_folder_votes, key=_folder_votes.get) if _folder_votes else None
+
     if not docs:
-        return {"issues": [], "evidence": [], "messages": [{"role": "assistant", "content": "No history yet — no evidence-grounded issues to flag."}]}
+        return {"issues": [], "evidence": [], "suggested_folder_id": None,
+                "messages": [{"role": "assistant", "content": "No history yet — no evidence-grounded issues to flag."}]}
 
     evidence_block = "\n\n".join(
         f'[{i}] (source: {d.metadata.get("source_file") or d.metadata.get("company", "Unknown")}, '
@@ -1051,6 +1072,7 @@ Rules:
     print(f"\n========== STRUCTURED ISSUES ==========\n{len(verified)}/{len(result.issues)} issues passed grounding and verification\n========================================\n")
 
     return {"issues": verified, "evidence": evidence_list,
+            "suggested_folder_id": suggested_folder_id,
             "messages": [{"role": "assistant", "content": f"Identified {len(verified)} evidence-grounded issue(s)."}]}
 
 
@@ -1404,6 +1426,7 @@ def run_review(draft_text: str, org_id: str | None = None) -> dict:
         "critic_verdict": state.get("critic_verdict", "pass"),
         "issues": state.get("issues", []),
         "evidence": state.get("evidence", []),
+        "suggested_folder_id": state.get("suggested_folder_id"),
     }
 
 
@@ -1453,6 +1476,7 @@ def run_review_stream(draft_text: str, org_id: str | None = None):
         "critic_verdict": state.get("critic_verdict", "pass"),
         "issues": state.get("issues", []),
         "evidence": state.get("evidence", []),
+        "suggested_folder_id": state.get("suggested_folder_id"),
     }}
 
 

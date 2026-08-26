@@ -135,6 +135,10 @@ class Review(SQLModel, table=True):
     report: str = ""
     issues_json: str = "[]"       # structured, evidence-grounded issues (see harmony.structured_issues_agent)
     evidence_json: str = "[]"     # every past statement retrieved for this draft, not just the flagged ones
+    # The folder the matched evidence came from, computed at review time. Offered
+    # at publish as where to file the approved draft, so a published document
+    # lands next to the folder whose documents it was checked against.
+    suggested_folder_id: str | None = None
     status: str = "pending"       # pending / approved / rejected
     created_by: str = ""
     decided_by: str = ""
@@ -245,7 +249,8 @@ _COLUMN_PATCHES = {
     "document": [("risk", "VARCHAR NOT NULL DEFAULT 'Low'"),
                  ("folder_id", "VARCHAR NULL")],
     "review": [("issues_json", "VARCHAR NOT NULL DEFAULT '[]'"),
-               ("evidence_json", "VARCHAR NOT NULL DEFAULT '[]'")],
+               ("evidence_json", "VARCHAR NOT NULL DEFAULT '[]'"),
+               ("suggested_folder_id", "VARCHAR NULL")],
     "emailcode": [("delivered", "BOOLEAN NOT NULL DEFAULT FALSE")],
     "organization": [("status", "VARCHAR NOT NULL DEFAULT 'active'"),
                      ("status_reason", "VARCHAR NOT NULL DEFAULT ''"),

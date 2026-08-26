@@ -49,6 +49,8 @@ function ReviewPageInner() {
   const [resolutions, setResolutions] = useState<Record<string, Resolution>>({});
   const [showApprove, setShowApprove] = useState(false);
   const [deciding, setDeciding] = useState(false);
+  // Default on: file the published draft in the folder its evidence came from.
+  const [fileInFolder, setFileInFolder] = useState(true);
   /** null = not requested, "running" = analysis in flight, "done" = complete. */
   const [analysis, setAnalysis] = useState<"idle" | "running" | "done">("idle");
 
@@ -389,6 +391,35 @@ function ReviewPageInner() {
               ? ` · ${editedCount} in your own wording rather than the AI's`
               : " · all in the AI's wording")}
         </p>
+        {detail.suggestedFolderPath && (
+          <label
+            className="flex items-start gap-2.5"
+            style={{
+              border: "1px solid var(--border)",
+              borderRadius: 9,
+              padding: "11px 13px",
+              margin: "4px 0 16px",
+              cursor: "pointer",
+              fontSize: 13,
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={fileInFolder}
+              onChange={(e) => setFileInFolder(e.target.checked)}
+              style={{ marginTop: 2, accentColor: "var(--accent)" }}
+            />
+            <span>
+              <span style={{ color: "var(--text)" }}>
+                Keep the published document in <strong>{detail.suggestedFolderPath}</strong>
+              </span>
+              <span style={{ display: "block", color: "var(--faint)", fontSize: 11.5, marginTop: 2 }}>
+                This is the folder whose documents this draft was checked against. Publishing changes only its
+                status — filing it here keeps it beside the evidence it matched.
+              </span>
+            </span>
+          </label>
+        )}
         <p style={{ ...modalTextStyle, marginBottom: 18 }}>
           By approving this document, you confirm that you have reviewed the identified inconsistencies and
           supporting evidence, and take responsibility for its publication.
@@ -412,12 +443,20 @@ function ReviewPageInner() {
               }
               setDeciding(true);
               try {
-                await decideReview(reviewId, "approve");
+                // Pass the suggested folder only when the option is ticked and
+                // one exists; otherwise leave the document's folder untouched.
+                const folderId =
+                  fileInFolder && detail.suggestedFolderId ? detail.suggestedFolderId : undefined;
+                const res = await decideReview(reviewId, "approve", folderId);
                 setShowApprove(false);
                 setStageIndex(WORKFLOW_STAGES.length - 1);
                 // Approving also writes the document into the evidence corpus,
                 // so future drafts are checked against it.
-                toast("Approved and published. Added to your disclosure history.");
+                toast(
+                  res.folder_path
+                    ? `Approved and published to ${res.folder_path}.`
+                    : "Approved and published. Added to your disclosure history.",
+                );
               } catch (err) {
                 toast(err instanceof ApiError ? err.message : "Could not record the approval.");
               } finally {

@@ -380,8 +380,19 @@ export function submitDraft(draft: string): Promise<ReviewResult> {
 }
 
 /** Records the human decision. Approving publishes and adds it to history. */
-export function decideReview(reviewId: string, decision: "approve" | "reject"): Promise<unknown> {
-  return apiPost("/api/decision", { review_id: reviewId, decision }, true);
+/**
+ * Record the human decision. On approve, `folderId` files the published
+ * document: a folder id places it there, "" moves it to the workspace root, and
+ * `undefined` leaves its folder untouched.
+ */
+export function decideReview(
+  reviewId: string,
+  decision: "approve" | "reject",
+  folderId?: string | null,
+): Promise<{ status: string; folder_path?: string | null }> {
+  const body: Record<string, unknown> = { review_id: reviewId, decision };
+  if (folderId !== undefined) body.folder_id = folderId;
+  return apiPost("/api/decision", body, true);
 }
 
 /* ============================================================

@@ -32,6 +32,9 @@ export interface ReviewDetail {
   /** Present once a decision has been recorded. */
   reviewId?: string;
   decision?: "pending" | "approved" | "rejected";
+  /** The folder the matched evidence came from — offered at publish time. */
+  suggestedFolderId?: string | null;
+  suggestedFolderPath?: string | null;
 }
 
 export interface ReviewBundle {
@@ -66,6 +69,8 @@ interface ApiReview {
   submitted_by?: string;
   issues: ApiIssue[];
   evidence: unknown[];
+  suggested_folder_id?: string | null;
+  suggested_folder_path?: string | null;
 }
 
 interface ApiDocDetail {
@@ -178,6 +183,8 @@ export async function getReview(orgId: string, documentId: string): Promise<Revi
       issues: rawIssues.map(toIssue),
       reviewId: latest?.id,
       decision: (latest?.status as ReviewDetail["decision"]) ?? "pending",
+      suggestedFolderId: latest?.suggested_folder_id ?? null,
+      suggestedFolderPath: latest?.suggested_folder_path ?? null,
     },
   };
 }

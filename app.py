@@ -22,7 +22,7 @@ import harmony   # saara agent + Qdrant logic yahan se aata hai
 
 # --- Enterprise backend: DB + Auth + Org + Docs + Security + Billing + SSO ---
 from datetime import datetime
-from sqlmodel import Session
+from sqlmodel import Session, select
 from sqlalchemy import text as _sa_text
 from db import init_db, engine, User, Document, Review, HistoryItem
 import routes_auth, routes_org, routes_documents, routes_security, routes_billing, routes_sso, routes_admin, routes_folders
@@ -117,6 +117,11 @@ class ReviewIn(BaseModel):
 class DecisionIn(BaseModel):
     review_id: str
     decision: str   # "approve" ya "reject"
+    # On approve: where to file the published document. Omit to leave the field
+    # untouched; pass a folder id to place it there; pass "" to move it to the
+    # workspace root. The UI defaults this to the review's suggested folder - the
+    # one whose documents the draft was checked against - but the user chooses.
+    folder_id: str | None = None
 
 
 # ---- API endpoints ----
@@ -383,7 +388,7 @@ async def upload_history(files: list[UploadFile] = File(...), company: str = For
         if text.strip():
             hid = _new_history_id()
             n = harmony.add_to_history(text, company=company or "Unknown", doc_type="history",
-                                       source_file=f.filename, history_id=hid)
+                                       source_file=f.filename, history_id=hid, folder_id=dest_folder)
             _record_history_item(org_id, user.id, company or "Unknown", f.filename, "history", n, hid)
             title = (f.filename.rsplit(".", 1)[0] if f.filename else "Untitled")
             with Session(engine) as s:
@@ -407,6 +412,22 @@ def _risk_from_issues(issues: list) -> str:
     return "Low"
 
 
+def _folder_path(org_id: str, folder_id: str | None) -> str | None:
+    """Human path for a folder id — "Finance / Reports" — or None. Org-scoped,
+    so a folder from another workspace resolves to nothing."""
+    if not folder_id:
+        return None
+    from db import Folder
+    with Session(engine) as s:
+        folders = {f.id: f for f in s.exec(select(Folder).where(Folder.org_id == org_id)).all()}
+    parts, cur, seen = [], folder_id, set()
+    while cur and cur in folders and cur not in seen:
+        seen.add(cur)
+        parts.append(folders[cur].name)
+        cur = folders[cur].parent_folder_id
+    return " / ".join(reversed(parts)) if parts else None
+
+
 def _persist_review(result: dict, org_id: str, user_id: str) -> dict:
     # run_review() / run_review_stream() dono ka result yahan persist hota hai (shared,
     # taake dono endpoints ek hi logic use karein — do jagah duplicate na ho).
@@ -416,6 +437,12 @@ def _persist_review(result: dict, org_id: str, user_id: str) -> dict:
     risk = _risk_from_issues(issues)
     doc_type = (result.get("draft_topic") or "").strip().title() or "Disclosure Draft"
     title = (result["company"] or "Draft") + " — " + doc_type
+    # The folder the evidence came from - only trust it if it still exists in
+    # THIS workspace (a folder can be deleted between review and publish).
+    suggested_folder_id = result.get("suggested_folder_id")
+    suggested_folder_path = _folder_path(org_id, suggested_folder_id)
+    if not suggested_folder_path:
+        suggested_folder_id = None
     with Session(engine) as s:
         doc = Document(org_id=org_id, title=title, doc_type=doc_type,
                        content=result["draft_text"], status="In Review", risk=risk, created_by=user_id)
@@ -424,7 +451,7 @@ def _persist_review(result: dict, org_id: str, user_id: str) -> dict:
         rev = Review(id=review_id, org_id=org_id, document_id=doc_id, company=result["company"],
                      average_rating=result["average_rating"], critic_verdict=result["critic_verdict"],
                      report=result["final_summary"], issues_json=json.dumps(issues),
-                     evidence_json=json.dumps(evidence),
+                     evidence_json=json.dumps(evidence), suggested_folder_id=suggested_folder_id,
                      status="pending", created_by=user_id)
         s.add(rev); s.commit()
     PENDING[review_id] = {**result, "document_id": doc_id}
@@ -439,6 +466,9 @@ def _persist_review(result: dict, org_id: str, user_id: str) -> dict:
         "report": result["final_summary"],
         "issues": issues,
         "evidence": evidence,
+        # Offered at publish: file the approved draft where its evidence lives.
+        "suggested_folder_id": suggested_folder_id,
+        "suggested_folder_path": suggested_folder_path,
     }
 
 
@@ -519,6 +549,7 @@ def decision(body: DecisionIn, user: User = Depends(require_role("reviewer")),
             "issues": issues,
             "evidence": evidence,
             "document_id": rev.document_id,
+            "suggested_folder_id": rev.suggested_folder_id,
         }
 
     def _update_status(new_status):
@@ -534,13 +565,39 @@ def decision(body: DecisionIn, user: User = Depends(require_role("reviewer")),
                 s.commit()
 
     if body.decision == "approve":
+        # Decide where the published document is filed. An explicit folder_id in
+        # the request wins ("" means workspace root); otherwise fall back to the
+        # folder its evidence came from. Either way the destination is validated
+        # to belong to THIS workspace before it is used.
+        from db import Folder
+        if body.folder_id is not None:
+            target_folder = body.folder_id.strip() or None
+        else:
+            target_folder = result.get("suggested_folder_id")
+        if target_folder:
+            with Session(engine) as s:
+                f = s.get(Folder, target_folder)
+                if not f or f.org_id != org_id:
+                    target_folder = None      # stale/foreign id -> leave unfiled rather than error
+
         publish_result = harmony.publish_review(result, org_id=org_id)
         _update_status("approved")
+        # File the now-published document where the user chose (or where its
+        # evidence lives). Publishing changes the document's LIFECYCLE; this is
+        # the one place it may also set its FOLDER, and only to a folder the user
+        # accepted at publish time.
+        if target_folder is not None or body.folder_id is not None:
+            with Session(engine) as s:
+                doc = s.get(Document, result.get("document_id")) if result.get("document_id") else None
+                if doc and doc.org_id == org_id:
+                    doc.folder_id = target_folder
+                    s.add(doc); s.commit()
         PENDING.pop(body.review_id, None)
         audit(org_id, user.id, "review.approved", result.get("company", ""))
         _record_history_item(org_id, user.id, result.get("company", "Unknown"), "", "approved",
                              publish_result.get("chunks_added", 0))
-        return {"status": "approved", "final_version": publish_result["final_version"]}
+        return {"status": "approved", "final_version": publish_result["final_version"],
+                "folder_id": target_folder, "folder_path": _folder_path(org_id, target_folder)}
 
     _update_status("rejected")
     PENDING.pop(body.review_id, None)

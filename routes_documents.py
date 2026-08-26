@@ -86,9 +86,22 @@ def get_document(doc_id: str, org_id: str = Depends(current_org_id), user: User 
     doc_row = d.dict()
     doc_row["submitted_by"] = names.get(d.created_by, "Unknown")
 
+    # Folder id -> "Finance / Reports", so the approve dialog can name the
+    # suggested folder without a second request. Org-scoped.
+    from db import Folder
+    with Session(engine) as s:
+        _folders = {f.id: f for f in s.exec(select(Folder).where(Folder.org_id == org_id)).all()}
+
+    def _fpath(fid):
+        parts, cur, seen = [], fid, set()
+        while cur and cur in _folders and cur not in seen:
+            seen.add(cur); parts.append(_folders[cur].name); cur = _folders[cur].parent_folder_id
+        return " / ".join(reversed(parts)) if parts else None
+
     review_rows = []
     for r in reviews:
         row = r.dict()
+        row["suggested_folder_path"] = _fpath(r.suggested_folder_id)
         try:
             row["issues"] = json.loads(r.issues_json or "[]")
         except (json.JSONDecodeError, TypeError):
