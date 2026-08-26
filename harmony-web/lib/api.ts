@@ -290,6 +290,11 @@ export function moveDocument(docId: string, folder_id: string | null): Promise<u
   return apiPost(`/api/documents/${encodeURIComponent(docId)}/move`, { folder_id }, true);
 }
 
+/** Delete several documents (and their reviews) at once. Admin+. */
+export function bulkDeleteDocuments(ids: string[]): Promise<{ deleted: number; reviews_removed: number }> {
+  return apiPost("/api/documents/bulk_delete", { ids }, true);
+}
+
 export interface FolderDoc {
   id: string;
   title: string;

@@ -13,6 +13,7 @@ import {
   renameFolder,
   deleteFolder,
   moveDocument,
+  bulkDeleteDocuments,
   listDocumentsInFolder,
   uploadToFolder,
   type FolderNode,
@@ -32,9 +33,10 @@ import {
 const ROOT = "__root__"; // sentinel for "Workspace root" in selection/UI only
 
 export function FolderBrowser() {
-  const { orgId, isViewer } = useRole();
+  const { orgId, isViewer, canManageTeam } = useRole();
   const { toast } = useToast();
   const canEdit = !isViewer;
+  const canDelete = canManageTeam; // admin+ — matches the delete endpoint
 
   const [folders, setFolders] = useState<FolderNode[]>([]);
   const [rootDocCount, setRootDocCount] = useState(0);
@@ -45,6 +47,8 @@ export function FolderBrowser() {
   const [docs, setDocs] = useState<FolderDoc[]>([]);
   const [docsLoading, setDocsLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [picked, setPicked] = useState<Set<string>>(new Set()); // selected doc ids
+  const [deletingSel, setDeletingSel] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const folderInput = useRef<HTMLInputElement>(null);
 
@@ -95,6 +99,40 @@ export function FolderBrowser() {
   useEffect(() => {
     void loadDocs();
   }, [loadDocs]);
+  // A different folder is a different set of documents — drop any selection so
+  // you can never delete a row you can no longer see.
+  useEffect(() => {
+    setPicked(new Set());
+  }, [selected]);
+
+  function togglePick(id: string) {
+    setPicked((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+  function toggleAll() {
+    setPicked((prev) => (prev.size === docs.length ? new Set() : new Set(docs.map((d) => d.id))));
+  }
+  async function doBulkDelete() {
+    const ids = docs.filter((d) => picked.has(d.id)).map((d) => d.id);
+    if (ids.length === 0) return;
+    if (!window.confirm(`Delete ${ids.length} document(s)? This also removes their reviews and cannot be undone.`))
+      return;
+    setDeletingSel(true);
+    try {
+      const r = await bulkDeleteDocuments(ids);
+      setPicked(new Set());
+      await loadFolders();
+      await loadDocs();
+      toast(`${r.deleted} document(s) deleted.`);
+    } catch (err) {
+      toast(err instanceof ApiError ? err.message : "Could not delete the selected documents.");
+    } finally {
+      setDeletingSel(false);
+    }
+  }
 
   function toggle(id: string) {
     setExpanded((prev) => {
@@ -332,11 +370,70 @@ export function FolderBrowser() {
           {...({ webkitdirectory: "", directory: "" } as Record<string, string>)}
         />
 
+        {/* bulk-action bar — appears only when documents are selected */}
+        {canDelete && picked.size > 0 && (
+          <div
+            className="flex items-center justify-between gap-3 app-fade"
+            style={{
+              background: "var(--surface-2)",
+              border: "1px solid var(--border)",
+              borderRadius: 9,
+              padding: "8px 14px",
+              marginBottom: 10,
+              fontSize: 13,
+            }}
+          >
+            <span style={{ color: "var(--text)" }}>
+              {picked.size} selected
+              <button
+                type="button"
+                onClick={() => setPicked(new Set())}
+                style={{ marginLeft: 10, background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontFamily: "inherit", fontSize: 12.5 }}
+              >
+                Clear
+              </button>
+            </span>
+            <button
+              type="button"
+              onClick={() => void doBulkDelete()}
+              disabled={deletingSel}
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: "#fff",
+                background: "var(--danger)",
+                border: "none",
+                borderRadius: 8,
+                padding: "7px 14px",
+                cursor: deletingSel ? "not-allowed" : "pointer",
+                fontFamily: "inherit",
+                opacity: deletingSel ? 0.6 : 1,
+              }}
+            >
+              {deletingSel ? "Deleting…" : `Delete ${picked.size} selected`}
+            </button>
+          </div>
+        )}
+
         {/* document list */}
         <div className="app-card scroll-x" style={{ padding: "6px 20px 4px" }}>
           <table className="app-table">
             <thead>
               <tr>
+                {canDelete && (
+                  <th scope="col" style={{ width: 34 }}>
+                    <input
+                      type="checkbox"
+                      aria-label="Select all documents"
+                      checked={docs.length > 0 && picked.size === docs.length}
+                      ref={(el) => {
+                        if (el) el.indeterminate = picked.size > 0 && picked.size < docs.length;
+                      }}
+                      onChange={toggleAll}
+                      style={{ accentColor: "var(--accent)", cursor: "pointer" }}
+                    />
+                  </th>
+                )}
                 <th scope="col">Document</th>
                 <th scope="col">Type</th>
                 <th scope="col">Status</th>
@@ -348,14 +445,14 @@ export function FolderBrowser() {
             <tbody>
               {docsLoading && (
                 <tr>
-                  <td colSpan={4} style={{ color: "var(--muted)" }}>
+                  <td colSpan={canDelete ? 5 : 4} style={{ color: "var(--muted)" }}>
                     Loading…
                   </td>
                 </tr>
               )}
               {!docsLoading && docs.length === 0 && (
                 <tr>
-                  <td colSpan={4} style={{ color: "var(--muted)" }}>
+                  <td colSpan={canDelete ? 5 : 4} style={{ color: "var(--muted)" }}>
                     {selected === null
                       ? "No unfiled documents. Everything is organised, or upload something new."
                       : "This folder is empty."}
@@ -363,7 +460,18 @@ export function FolderBrowser() {
                 </tr>
               )}
               {docs.map((d) => (
-                <tr key={d.id}>
+                <tr key={d.id} style={{ background: picked.has(d.id) ? "var(--surface)" : undefined }}>
+                  {canDelete && (
+                    <td>
+                      <input
+                        type="checkbox"
+                        aria-label={`Select ${d.title}`}
+                        checked={picked.has(d.id)}
+                        onChange={() => togglePick(d.id)}
+                        style={{ accentColor: "var(--accent)", cursor: "pointer" }}
+                      />
+                    </td>
+                  )}
                   <td style={{ color: "var(--text)" }}>
                     <span className="flex items-center gap-2">
                       <FileIcon size={14} />

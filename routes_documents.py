@@ -4,6 +4,7 @@
 import json
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlmodel import Session, select
 from db import engine, User, Document, Review, AuditLog, Membership, HistoryItem
 import harmony
@@ -288,6 +289,41 @@ def delete_document(doc_id: str, org_id: str = Depends(current_org_id),
 
     audit(org_id, user.id, "document.deleted", f"{title} ({n_reviews} review(s))")
     return {"status": "deleted", "document": title, "reviews_removed": n_reviews}
+
+
+class BulkDeleteIn(BaseModel):
+    ids: list[str]
+
+
+@router.post("/documents/bulk_delete")
+def bulk_delete_documents(body: BulkDeleteIn, org_id: str = Depends(current_org_id),
+                          user: User = Depends(require_role("admin"))):
+    """Delete several documents (and their reviews) in one request.
+
+    Each id is checked against this workspace before anything is removed - ids
+    that are not ours are simply skipped, never touched, so a crafted id in the
+    list can neither delete nor even confirm the existence of another tenant's
+    document. Same scope as the single delete; this only spares the user N
+    round trips and N confirmations.
+    """
+    if not body.ids:
+        return {"status": "ok", "deleted": 0, "reviews_removed": 0}
+    if len(body.ids) > 500:
+        raise HTTPException(400, "Too many documents in one request.")
+
+    deleted = reviews_removed = 0
+    with Session(engine) as s:
+        for doc_id in set(body.ids):
+            doc = s.get(Document, doc_id)
+            if not doc or doc.org_id != org_id:      # org filter is the access check
+                continue
+            for r in s.exec(select(Review).where(Review.document_id == doc_id)).all():
+                s.delete(r); reviews_removed += 1
+            s.delete(doc); deleted += 1
+        s.commit()
+
+    audit(org_id, user.id, "document.bulk_deleted", f"{deleted} document(s)")
+    return {"status": "deleted", "deleted": deleted, "reviews_removed": reviews_removed}
 
 
 @router.delete("/history/{item_id}")
