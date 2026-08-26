@@ -21,11 +21,17 @@ import {
  * baked in at build time, because the frontend is a static export and the id is
  * an environment setting on the server — this way one deploy works for any
  * configured id, and the button simply does not appear when none is set.
+ *
+ * The container div is rendered UNCONDITIONALLY. It used to be gated on an
+ * `enabled` state that was only set true after `renderButton` had already used
+ * the ref - but the ref target did not exist until `enabled` was true, so the
+ * ref was always null, the effect bailed, and the button never appeared at all.
+ * Always mounting the target breaks that cycle; it stays empty (zero height) if
+ * Google is not configured.
  */
 
 const GSI_SRC = "https://accounts.google.com/gsi/client";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare global {
   interface Window {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -55,7 +61,6 @@ function loadGsi(): Promise<void> {
 export function GoogleButton({ onError }: { onError?: (message: string) => void }) {
   const router = useRouter();
   const ref = useRef<HTMLDivElement>(null);
-  const [enabled, setEnabled] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -77,18 +82,29 @@ export function GoogleButton({ onError }: { onError?: (message: string) => void 
         router.push("/app");
       } catch (err) {
         setBusy(false);
-        onError?.(
-          err instanceof ApiError ? err.message : "Google sign-in failed. Please try again.",
-        );
+        onError?.(err instanceof ApiError ? err.message : "Google sign-in failed. Please try again.");
       }
     }
 
     (async () => {
+      let cfg;
       try {
-        const cfg = await getAuthConfig();
-        if (cancelled || !cfg.google_enabled || !cfg.google_client_id) return;
+        cfg = await getAuthConfig();
+      } catch {
+        return; // API unreachable — nothing to render
+      }
+      if (cancelled || !cfg.google_enabled || !cfg.google_client_id) return;
+
+      try {
         await loadGsi();
-        if (cancelled || !ref.current) return;
+      } catch {
+        // Script blocked (offline, extension). Leave the container empty; the
+        // email/password form still works.
+        return;
+      }
+      if (cancelled || !ref.current || !window.google?.accounts?.id) return;
+
+      try {
         window.google.accounts.id.initialize({
           client_id: cfg.google_client_id,
           callback: handleCredential,
@@ -99,10 +115,13 @@ export function GoogleButton({ onError }: { onError?: (message: string) => void 
           width: 336,
           text: "continue_with",
           shape: "rectangular",
+          logo_alignment: "center",
         });
-        setEnabled(true);
-      } catch {
-        /* Google not configured or unreachable — the button just stays hidden. */
+      } catch (err) {
+        // Most commonly: this origin is not (yet) an authorised JavaScript
+        // origin for the client id. Surfacing it beats a silent blank space.
+        // eslint-disable-next-line no-console
+        console.error("Google Identity Services failed to render:", err);
       }
     })();
 
@@ -111,14 +130,20 @@ export function GoogleButton({ onError }: { onError?: (message: string) => void 
     };
   }, [router, onError]);
 
-  if (!enabled) return null;
-
   return (
-    <div style={{ position: "relative" }}>
+    <div style={{ position: "relative", minHeight: 1 }}>
       <div ref={ref} style={{ display: "flex", justifyContent: "center", opacity: busy ? 0.5 : 1 }} />
       {busy && (
-        <span style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center",
-                       fontSize: 12, color: "var(--muted)" }}>
+        <span
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "grid",
+            placeItems: "center",
+            fontSize: 12,
+            color: "var(--muted)",
+          }}
+        >
           Signing in…
         </span>
       )}
