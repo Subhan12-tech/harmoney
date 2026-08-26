@@ -363,6 +363,24 @@ export function uploadToCorpus(files: File[], company = "Unknown"): Promise<{ ad
   return apiUpload("/api/upload_history", form);
 }
 
+/**
+ * Upload files INTO a folder. Same pipeline as uploadToCorpus - each file is
+ * indexed into the evidence library so future drafts are checked against it -
+ * but tagged with the folder so it also appears there. `folderId` null uploads
+ * to the workspace root (still evidence, just unfiled).
+ */
+export function uploadToFolder(
+  files: File[],
+  folderId: string | null,
+  company = "Unknown",
+): Promise<{ count: number; added: string[]; skipped: string[] }> {
+  const form = new FormData();
+  files.forEach((f) => form.append("files", f));
+  form.append("company", company);
+  if (folderId) form.append("folder_id", folderId);
+  return apiUpload("/api/upload_history", form);
+}
+
 export interface ReviewResult {
   review_id: string;
   document_id?: string;

@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRole } from "@/context/RoleContext";
 import { useToast } from "./Toast";
 import { Modal } from "./Modal";
-import { FolderIcon, FileIcon, PlusIcon } from "./icons";
+import { FolderIcon, FileIcon, PlusIcon, UploadIcon } from "./icons";
 import { primaryButtonStyle, secondaryButtonStyle } from "@/lib/style";
 import {
   ApiError,
@@ -14,6 +14,7 @@ import {
   deleteFolder,
   moveDocument,
   listDocumentsInFolder,
+  uploadToFolder,
   type FolderNode,
   type FolderDoc,
   type DeleteStrategy,
@@ -43,6 +44,9 @@ export function FolderBrowser() {
 
   const [docs, setDocs] = useState<FolderDoc[]>([]);
   const [docsLoading, setDocsLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const folderInput = useRef<HTMLInputElement>(null);
 
   // dialogs
   const [createUnder, setCreateUnder] = useState<string | null | undefined>(undefined); // undefined = closed
@@ -165,6 +169,28 @@ export function FolderBrowser() {
       toast(err instanceof ApiError ? err.message : "Could not move the document.");
     }
   }
+  async function doUpload(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    try {
+      // Uploaded here, the files become EVIDENCE (indexed for future reviews)
+      // AND are filed in the selected folder. Root uploads are evidence too,
+      // just unfiled.
+      const r = await uploadToFolder(Array.from(files), selected);
+      await loadFolders();
+      await loadDocs();
+      const where = selected ? `"${selectedName}"` : "the workspace";
+      if (r.added.length) {
+        toast(`${r.added.length} file(s) added to ${where} and indexed as evidence.`);
+      } else {
+        toast(`Nothing added.${r.skipped.length ? ` ${r.skipped.length} skipped.` : ""}`);
+      }
+    } catch (err) {
+      toast(err instanceof ApiError ? err.message : "Upload failed.");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
@@ -254,11 +280,57 @@ export function FolderBrowser() {
             </span>
           </h2>
           {canEdit && (
-            <button type="button" style={secondaryButtonStyle} onClick={() => setCreateUnder(selected)}>
-              + New {selected ? "subfolder" : "folder"}
-            </button>
+            <div className="flex items-center gap-2" style={{ flexWrap: "wrap" }}>
+              <button
+                type="button"
+                style={{ ...primaryButtonStyle, display: "inline-flex", alignItems: "center", gap: 6, opacity: uploading ? 0.6 : 1 }}
+                disabled={uploading}
+                onClick={() => fileInput.current?.click()}
+              >
+                <UploadIcon size={14} />
+                {uploading ? "Uploading…" : "Upload files"}
+              </button>
+              <button type="button" style={secondaryButtonStyle} disabled={uploading} onClick={() => folderInput.current?.click()}>
+                Upload folder
+              </button>
+              <button type="button" style={secondaryButtonStyle} onClick={() => setCreateUnder(selected)}>
+                + New {selected ? "subfolder" : "folder"}
+              </button>
+            </div>
           )}
         </div>
+
+        {/* what an upload here does */}
+        {canEdit && (
+          <p style={{ color: "var(--faint)", fontSize: 12, margin: "0 0 12px", lineHeight: 1.5 }}>
+            Files you upload here are indexed as <strong>evidence</strong> — every future draft is checked
+            against them — and filed in {selected ? `"${selectedName}"` : "the workspace root"}.
+          </p>
+        )}
+
+        {/* hidden pickers */}
+        <input
+          ref={fileInput}
+          type="file"
+          multiple
+          hidden
+          accept=".pdf,.docx,.txt,.md,.csv,.html,.png,.jpg,.jpeg,.webp"
+          onChange={(e) => {
+            void doUpload(e.target.files);
+            e.target.value = "";
+          }}
+        />
+        <input
+          ref={folderInput}
+          type="file"
+          multiple
+          hidden
+          onChange={(e) => {
+            void doUpload(e.target.files);
+            e.target.value = "";
+          }}
+          {...({ webkitdirectory: "", directory: "" } as Record<string, string>)}
+        />
 
         {/* document list */}
         <div className="app-card scroll-x" style={{ padding: "6px 20px 4px" }}>
