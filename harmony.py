@@ -292,6 +292,14 @@ SPLITTER = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
 # start disappearing.
 RELEVANCE_FLOOR = float(os.getenv("HARMONY_RELEVANCE_FLOOR", "0.83"))
 
+# A slightly lower floor for the PER-CLAIM issue retrieval. A single sentence is
+# shorter than the whole draft, so its best-matching evidence chunk tends to
+# score a little lower even when it is genuinely the right evidence; holding it
+# to the whole-draft floor dropped real matches and let inconsistencies through.
+# The verification pass downstream is what keeps precision, so recall can lead
+# here. Raise it toward RELEVANCE_FLOOR if false positives appear.
+ISSUE_RELEVANCE_FLOOR = float(os.getenv("HARMONY_ISSUE_FLOOR", "0.79"))
+
 # multi-tenancy: har org ka data alag rakhne ke liye. run_review() ise set karta hai,
 # retrieve/add functions ise metadata filter/tag ke tor par use karte hain.
 #
@@ -962,14 +970,49 @@ def structured_issues_agent(state: AgentState) -> dict:
     if _org:
         flt = Filter(must=[FieldCondition(key="metadata.org_id", match=MatchValue(value=_org))])
     try:
-        # k=8. Raising it to 14 was tried and made things worse: a subtle-drift
-        # case went from 3/3 to 2/3, because the extra chunks were noise the
-        # model had to reason around. More evidence is not better evidence.
-        scored = vector_store.similarity_search_with_score(draft_text, k=8, filter=flt)
-        docs = [d for d, score in scored if score >= RELEVANCE_FLOOR]
-        if scored and not docs:
-            print(f"  issues: corpus has nothing about this draft "
-                  f"(best {scored[0][1]:.3f} < {RELEVANCE_FLOOR}) - reporting no issues")
+        # Retrieve evidence PER CLAIM, not once for the whole draft.
+        #
+        # A single whole-draft query only surfaces the chunks similar to the
+        # draft OVERALL, so on a multi-topic draft (revenue, margin, geography,
+        # headcount, retention, R&D, capex) the evidence for every claim except
+        # the dominant one never makes the top-k - and a claim with no retrieved
+        # evidence can never be flagged. That is how real inconsistencies were
+        # missed. Querying each sentence separately gives every claim its own
+        # shot at its own evidence; the results are unioned and de-duplicated.
+        #
+        # This is NOT the same as just raising k on the whole-draft query (which
+        # was tried and hurt: extra whole-draft-similar chunks are redundant
+        # noise). These extra chunks are each targeted at a specific claim.
+        import re as _re_sent
+        sentences = [s.strip() for s in _re_sent.split(r"(?<=[.!?])\s+", draft_text)
+                     if len(s.strip()) >= 24]
+        sent_k = int(os.getenv("HARMONY_ISSUE_SENT_K", "3"))
+        max_docs = int(os.getenv("HARMONY_ISSUE_MAX_DOCS", "16"))
+
+        seen, pool = set(), []
+        best_overall = 0.0
+        # Whole draft first (cross-cutting evidence), then one query per sentence.
+        for q in [draft_text, *sentences[:40]]:
+            try:
+                hits = vector_store.similarity_search_with_score(
+                    q, k=(8 if q is draft_text else sent_k), filter=flt)
+            except Exception:
+                continue
+            for d, score in hits:
+                best_overall = max(best_overall, score)
+                if score < ISSUE_RELEVANCE_FLOOR:
+                    continue
+                key = (d.metadata.get("history_id") or "", d.page_content[:120])
+                if key in seen:
+                    continue
+                seen.add(key)
+                pool.append((d, score))
+
+        pool.sort(key=lambda x: -x[1])          # best evidence first
+        docs = [d for d, _ in pool[:max_docs]]
+        if not docs:
+            print(f"  issues: corpus has nothing above the floor for this draft "
+                  f"(best {best_overall:.3f} < {ISSUE_RELEVANCE_FLOOR}) - reporting no issues")
     except Exception as e:
         print("structured issues: evidence retrieval error:", e)
         docs = []
