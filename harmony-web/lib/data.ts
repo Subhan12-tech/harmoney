@@ -52,6 +52,8 @@ export interface HarmonyDocument {
 export interface Issue {
   id: string;
   severity: Severity;
+  /** The kind of change, e.g. "Direct Contradiction", "Material Value Change". */
+  classification?: string;
   /** The exact draft sentence this issue is anchored to. */
   phrase: string;
   reason: string;

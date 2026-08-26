@@ -36,6 +36,25 @@ export function ReviewPanel({
           <span style={severityChipStyle(issue.severity)}>{issue.severity}</span>
         </div>
 
+        {issue.classification && (
+          <div
+            style={{
+              display: "inline-block",
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: "0.02em",
+              color: "var(--muted)",
+              background: "var(--surface-2)",
+              border: "1px solid var(--border)",
+              borderRadius: 6,
+              padding: "2px 8px",
+              marginBottom: 8,
+            }}
+          >
+            {issue.classification}
+          </div>
+        )}
+
         <p style={{ fontSize: 13.5, margin: 0, color: "var(--text)" }}>{issue.reason}</p>
 
         <div style={{ height: 1, background: "var(--border)", margin: "12px 0" }} />

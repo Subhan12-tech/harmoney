@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Muhammad Subhan Shafique — Resume</title>
+<style>
+  @page { size: A4; margin: 8mm 13mm; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: Georgia, "Times New Roman", serif;
+    color: #111;
+    font-size: 8.95pt;
+    line-height: 1.16;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .name {
+    text-align: center;
+    font-size: 19pt;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    margin: 0 0 1px;
+  }
+  .sub { text-align: center; font-size: 8.8pt; color: #333; margin: 0; }
+  .contact { text-align: center; font-size: 8.8pt; color: #333; margin: 1px 0 7px; }
+
+  h2 {
+    font-size: 10.2pt;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    margin: 6px 0 2px;
+    padding-bottom: 1.5px;
+    border-bottom: 1.1px solid #111;
+  }
+  p { margin: 2.5px 0; }
+
+  .edu-row, .proj-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .edu-row .left, .proj-head .title { font-weight: 700; }
+  .edu-row .right, .proj-head .stack { font-style: italic; font-size: 8.6pt; color: #333; white-space: nowrap; }
+  .edu-row .left { font-weight: 700; }
+  .edu-sub { font-style: italic; font-size: 9pt; color: #222; margin: 0 0 1px; }
+
+  .skills p { margin: 2px 0; }
+  .skills b { font-weight: 700; }
+
+  .project { margin: 3px 0 4px; page-break-inside: avoid; }
+  ul { margin: 2px 0 0; padding-left: 15px; }
+  li { margin: 1px 0; }
+
+  /* The new flagship project gets a hairline accent so a skimming eye lands on it,
+     without breaking the black-and-white resume convention. */
+  .feature .title::before {
+    content: "";
+    display: inline-block;
+    width: 5px; height: 5px;
+    background: #111;
+    border-radius: 50%;
+    margin-right: 7px;
+    vertical-align: middle;
+  }
+</style>
+</head>
+<body>
+  <div class="name">Muhammad Subhan Shafique</div>
+  <p class="sub">BS Computer Engineering — NUST Islamabad</p>
+  <p class="contact">+92 301-5651653 &nbsp;|&nbsp; subhanshafique686@gmail.com</p>
+
+  <h2>SUMMARY</h2>
+  <p>BS Computer Engineering undergraduate at NUST with hands-on experience across the full software–hardware stack. Proficient in C/C++, Java, Python, and SystemVerilog, with practical depth in data structures and algorithms, operating systems, embedded systems, computer architecture, and machine learning — plus full-stack and applied-ML product engineering. Driven to solve complex problems at the intersection of software, hardware, and intelligent systems.</p>
+
+  <h2>EDUCATION</h2>
+  <div class="edu-row">
+    <span class="left">National University of Sciences and Technology (NUST)</span>
+    <span class="right">Islamabad, Pakistan</span>
+  </div>
+  <div class="edu-row">
+    <span class="edu-sub">BS Computer Engineering</span>
+    <span class="right">Sept. 2024 – June 2028</span>
+  </div>
+
+  <h2>TECHNICAL SKILLS</h2>
+  <div class="skills">
+    <p><b>Programming Languages:</b> C, C++, Java, Python, SystemVerilog, Assembly (PIC18 ALP)</p>
+    <p><b>Data Structures &amp; Algorithms:</b> Graphs, Hash Tables, Heaps, Trees, Dijkstra’s Algorithm, Huffman Encoding, Banker’s Algorithm, Algorithm Design</p>
+    <p><b>Systems &amp; Architecture:</b> Operating Systems, Computer Architecture, RISC-V, RTL Design, Pipelining, Hazard Detection, PIC18F452 Microcontroller, Timer/Interrupt Configuration, LCD Programming</p>
+    <p><b>Concurrency &amp; OS:</b> Multithreading, Mutexes, Condition Variables, Synchronization, Process Scheduling, Memory Management, Real-Time Systems</p>
+    <p><b>Web &amp; AI:</b> FastAPI, Next.js/React, LangGraph, Retrieval-Augmented Generation (RAG), Vector Databases (Qdrant), PostgreSQL, JWT/OAuth, Docker</p>
+    <p><b>Developer Tools:</b> Git, GitHub, VS Code, MPLAB X IDE, Logisim</p>
+  </div>
+
+  <h2>PROJECTS</h2>
+
+  <div class="project feature">
+    <div class="proj-head">
+      <span class="title">Harmony — AI Disclosure-Consistency Copilot (Full-Stack SaaS)</span>
+      <span class="stack">Python, FastAPI, Next.js, LangGraph, Qdrant, Docker</span>
+    </div>
+    <ul>
+      <li>Architected a production multi-tenant SaaS that checks corporate disclosure drafts against a company’s own prior public statements and flags contradictions with cited evidence; deployed on Render with PostgreSQL and Qdrant Cloud behind a Dockerized, same-origin Next.js build.</li>
+      <li>Engineered a 7-stage <b>LangGraph multi-agent pipeline</b> (retrieval → consistency → critique → verification) with RAG grounding over a vector store, tying every flagged issue to a verbatim source quote — reaching <b>93/100 on a 100-case benchmark</b> across 7 domains and lifting clean-document accuracy from <b>57% → 93%</b> by eliminating hallucinated findings.</li>
+      <li>Built secure multi-tenancy from scratch: revocable JWT sessions, 5-tier role-based access control, and per-request tenant isolation via <span style="font-style:italic">ContextVar</span> + vector-store payload filters, plus <b>Google OAuth</b> with server-side ID-token verification and email verification.</li>
+      <li>Hardened the platform through a self-conducted security review — identified and fixed an <b>arbitrary-file-read (LFI)</b> vulnerability leaking API secrets, and added login rate-limiting and upload size caps — then shipped a hierarchical folder/document system with AI-assisted filing.</li>
+    </ul>
+  </div>
+
+  <div class="project">
+    <div class="proj-head">
+      <span class="title">Traffic Flow Optimization System</span>
+      <span class="stack">C++, Graph Theory, DSA</span>
+    </div>
+    <ul>
+      <li>Designed and implemented a simulation-based urban traffic management system that models a city road network as a directed weighted graph with congestion-aware dynamic edge weights derived from the Bureau of Public Roads travel-time function.</li>
+      <li>Implemented Dijkstra’s Algorithm for real-time multi-source, multi-destination optimal routing, recomputing shortest paths every cycle to reflect live congestion levels.</li>
+      <li>Developed queue-based intersection models with adaptive traffic signal control that prioritize the road with the longest vehicle queue at each timestep, minimizing network-wide delay.</li>
+      <li>Maintained per-vehicle state (source, destination, remaining travel time, status) and updated flow, queue, and congestion metrics across discrete simulation steps with O(E log V) routing efficiency.</li>
+    </ul>
+  </div>
+
+  <div class="project">
+    <div class="proj-head">
+      <span class="title">NeuroDrive — Autonomous Self-Driving RC Car</span>
+      <span class="stack">TinyML, TensorFlow Lite Micro, C++</span>
+    </div>
+    <ul>
+      <li>Deployed a PilotNet-inspired CNN end-to-end learning model on a resource-constrained microcontroller using TensorFlow Lite Micro (TFLM), targeting inference latency under 133 ms within tight SRAM/ROM constraints.</li>
+      <li>Applied 8-bit quantization-aware training and Neural Architecture Search (NAS) techniques to reduce model size while preserving steering-angle prediction accuracy for real-time cyber-physical control.</li>
+      <li>Characterized the trade-off relationship between model depth, accuracy, and inference latency, iteratively tuning the DNN architecture to satisfy simultaneous memory and timing constraints.</li>
+      <li>Integrated camera-based perception with servo-motor actuation, enabling end-to-end autonomous lane-following without a classical multi-stage perception pipeline.</li>
+    </ul>
+  </div>
+
+  <div class="project">
+    <div class="proj-head">
+      <span class="title">Multi-Drone Control Simulator</span>
+      <span class="stack">Java, Swing, Control Theory</span>
+    </div>
+    <ul>
+      <li>Engineered a multi-agent drone simulation leveraging PD control loops with tunable Kd and Kv gains, drag coefficients, and fluid-dynamics modeling for realistic motion behavior.</li>
+      <li>Implemented a custom projective perspective engine to render 3D flight trajectories on a 2D plane without external 3D libraries, ensuring spatial accuracy in visualization.</li>
+      <li>Designed an interactive GUI in Java Swing featuring real-time parameter tuning and telemetry displays for monitoring drone swarm dynamics.</li>
+    </ul>
+  </div>
+
+  <div class="project">
+    <div class="proj-head">
+      <span class="title">RV32I 5-Stage Pipelined RISC-V Processor</span>
+      <span class="stack">SystemVerilog, Computer Architecture</span>
+    </div>
+    <ul>
+      <li>Architected and implemented an RV32I-compliant 5-stage pipelined processor with full support for data and control hazard resolution.</li>
+      <li>Engineered forwarding, stalling, and pipeline flush mechanisms to ensure correctness under dependent and branch-heavy instruction streams.</li>
+      <li>Integrated a multi-cycle Booth multiplier with stall control to synchronize 32-cycle execution, and built hazard detection logic enabling safe interaction between single-cycle pipeline stages and multi-cycle execution units.</li>
+    </ul>
+  </div>
+
+</body>
+</html>

@@ -14,6 +14,7 @@ import {
   primaryButtonStyle,
   resolvedHighlightStyle,
   secondaryButtonStyle,
+  severityChipStyle,
 } from "@/lib/style";
 import { WorkflowStepper } from "@/components/app/WorkflowStepper";
 import { ReviewPanel } from "@/components/app/ReviewPanel";
@@ -51,6 +52,8 @@ function ReviewPageInner() {
   const [deciding, setDeciding] = useState(false);
   // Default on: file the published draft in the folder its evidence came from.
   const [fileInFolder, setFileInFolder] = useState(true);
+  // "Search by issue" — type a topic (e.g. "revenue") to find findings about it.
+  const [issueQuery, setIssueQuery] = useState("");
   /** null = not requested, "running" = analysis in flight, "done" = complete. */
   const [analysis, setAnalysis] = useState<"idle" | "running" | "done">("idle");
 
@@ -72,6 +75,18 @@ function ReviewPageInner() {
 
   const byId = useMemo(() => new Map(visibleIssues.map((i) => [i.id, i])), [visibleIssues]);
   const active: Issue | undefined = (selectedIssueId ? byId.get(selectedIssueId) : undefined) ?? visibleIssues[0];
+
+  // Issues matching the topic search — checks the draft sentence, the reason,
+  // the cited evidence, and the classification, so "revenue" surfaces any
+  // finding about revenue whether the term is in the draft or in prior history.
+  const issueMatches = useMemo(() => {
+    const q = issueQuery.trim().toLowerCase();
+    if (!q) return [];
+    return visibleIssues.filter((i) =>
+      [i.phrase, i.reason, i.evidenceQuote, i.evidenceDoc, i.classification]
+        .some((f) => (f || "").toLowerCase().includes(q)),
+    );
+  }, [visibleIssues, issueQuery]);
 
   const highCount = visibleIssues.filter((i) => i.severity === "High").length;
   const unresolved = visibleIssues.filter((i) => !resolutions[i.id]).length;
@@ -161,6 +176,84 @@ function ReviewPageInner() {
       </p>
 
       <WorkflowStepper currentIndex={stageIndex} />
+
+      {/* ---- Search by issue ---- */}
+      {analysed && (
+        <div style={{ margin: "16px 0 4px" }}>
+          <label htmlFor="issue-search" className="sr-only">
+            Search findings by topic
+          </label>
+          <input
+            id="issue-search"
+            type="search"
+            value={issueQuery}
+            onChange={(e) => setIssueQuery(e.target.value)}
+            placeholder="Search findings by topic — e.g. revenue, guidance, headcount…"
+            style={{
+              width: "100%",
+              maxWidth: 460,
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              borderRadius: 9,
+              padding: "9px 13px",
+              color: "var(--text)",
+              fontSize: 13.5,
+              fontFamily: "inherit",
+            }}
+          />
+          {issueQuery.trim() && (
+            <div style={{ marginTop: 8, maxWidth: 640 }}>
+              {issueMatches.length === 0 ? (
+                <p style={{ fontSize: 13, color: "var(--muted)", margin: 0 }}>
+                  No inconsistencies about &ldquo;{issueQuery.trim()}&rdquo; in this review — the draft and the
+                  cited history agree on it (or it was not mentioned).
+                </p>
+              ) : (
+                <>
+                  <p style={{ fontSize: 12, color: "var(--muted)", margin: "0 0 6px" }}>
+                    {issueMatches.length} finding{issueMatches.length === 1 ? "" : "s"} about &ldquo;
+                    {issueQuery.trim()}&rdquo;
+                  </p>
+                  <div className="flex flex-col gap-1.5">
+                    {issueMatches.map((i) => (
+                      <button
+                        key={i.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedIssueId(i.id);
+                          window.document
+                            .getElementById("draft-heading")
+                            ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                        }}
+                        className="flex items-center gap-2"
+                        style={{
+                          textAlign: "left",
+                          background: selectedIssueId === i.id ? "var(--surface-2)" : "var(--surface)",
+                          border: "1px solid var(--border)",
+                          borderRadius: 8,
+                          padding: "7px 11px",
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                          fontSize: 12.5,
+                          color: "var(--text)",
+                        }}
+                      >
+                        <span style={severityChipStyle(i.severity)}>{i.severity}</span>
+                        {i.classification && (
+                          <span style={{ color: "var(--faint)", fontSize: 11 }}>{i.classification}</span>
+                        )}
+                        <span style={{ color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {i.phrase}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ---- Draft + evidence ---- */}
       <div className={`grid grid-cols-1 gap-4 ${analysed ? "xl:grid-cols-[1.4fr_1fr]" : ""}`}>
