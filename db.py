@@ -250,7 +250,13 @@ def _migrate():
                 continue                      # table not created yet; create_all handles it
             for name, ddl in cols:
                 if name not in existing:
-                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}"))
+                    # Quote the table name. "user" is a reserved word in
+                    # Postgres, so an unquoted ALTER TABLE user is a syntax
+                    # error - it only slipped through on SQLite, which does not
+                    # reserve it, and crashed the first Postgres boot after a
+                    # user-table patch was added. Double quotes are the standard
+                    # identifier quote and work on both.
+                    conn.execute(text(f'ALTER TABLE "{table}" ADD COLUMN {name} {ddl}'))
         conn.commit()
 
 
