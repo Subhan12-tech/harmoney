@@ -51,6 +51,7 @@ export function FolderBrowser() {
   const [deletingSel, setDeletingSel] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const folderInput = useRef<HTMLInputElement>(null);
+  const lastPicked = useRef<number | null>(null); // anchor row for shift-range select
 
   // dialogs
   const [createUnder, setCreateUnder] = useState<string | null | undefined>(undefined); // undefined = closed
@@ -115,6 +116,45 @@ export function FolderBrowser() {
   function toggleAll() {
     setPicked((prev) => (prev.size === docs.length ? new Set() : new Set(docs.map((d) => d.id))));
   }
+  // Row click acts like a file manager: plain click toggles, Shift+click selects
+  // the range from the last-clicked row. Clicking the Move button or the
+  // checkbox itself is handled separately (they stop propagation).
+  function onRowSelect(e: React.MouseEvent, index: number, id: string) {
+    if (!canDelete) return;
+    if (e.shiftKey && lastPicked.current !== null) {
+      const [a, b] = [lastPicked.current, index].sort((x, y) => x - y);
+      setPicked((prev) => {
+        const next = new Set(prev);
+        for (let i = a; i <= b; i++) next.add(docs[i].id);
+        return next;
+      });
+    } else {
+      togglePick(id);
+      lastPicked.current = index;
+    }
+  }
+
+  // Keyboard: Ctrl/Cmd+A selects all in the open folder, Escape clears — the
+  // conventions a file view is expected to honour. (Ctrl+S is the browser's own
+  // Save shortcut and cannot be a select gesture, which is what prompted this.)
+  useEffect(() => {
+    if (!canDelete) return;
+    function onKey(e: KeyboardEvent) {
+      const t = e.target as HTMLElement | null;
+      const tag = (t?.tagName || "").toLowerCase();
+      if (tag === "input" || tag === "textarea" || tag === "select" || t?.isContentEditable) return;
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") {
+        if (docs.length) {
+          e.preventDefault();
+          setPicked(new Set(docs.map((d) => d.id)));
+        }
+      } else if (e.key === "Escape" && picked.size) {
+        setPicked(new Set());
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [canDelete, docs, picked.size]);
   async function doBulkDelete() {
     const ids = docs.filter((d) => picked.has(d.id)).map((d) => d.id);
     if (ids.length === 0) return;
@@ -459,15 +499,26 @@ export function FolderBrowser() {
                   </td>
                 </tr>
               )}
-              {docs.map((d) => (
-                <tr key={d.id} style={{ background: picked.has(d.id) ? "var(--surface)" : undefined }}>
+              {docs.map((d, i) => (
+                <tr
+                  key={d.id}
+                  onClick={(e) => onRowSelect(e, i, d.id)}
+                  style={{
+                    background: picked.has(d.id) ? "var(--surface)" : undefined,
+                    cursor: canDelete ? "pointer" : undefined,
+                    userSelect: canDelete ? "none" : undefined,
+                  }}
+                >
                   {canDelete && (
-                    <td>
+                    <td onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         aria-label={`Select ${d.title}`}
                         checked={picked.has(d.id)}
-                        onChange={() => togglePick(d.id)}
+                        onChange={() => {
+                          togglePick(d.id);
+                          lastPicked.current = i;
+                        }}
                         style={{ accentColor: "var(--accent)", cursor: "pointer" }}
                       />
                     </td>
@@ -486,7 +537,10 @@ export function FolderBrowser() {
                     {canEdit && (
                       <button
                         type="button"
-                        onClick={() => setMoveDoc(d)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setMoveDoc(d);
+                        }}
                         style={{
                           fontSize: 12,
                           color: "var(--muted)",
