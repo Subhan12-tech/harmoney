@@ -14,6 +14,7 @@ import {
 } from "@/lib/api";
 import { primaryButtonStyle, secondaryButtonStyle } from "@/lib/style";
 import { BrandPanel } from "./BrandPanel";
+import { GoogleButton } from "./GoogleButton";
 import { CheckIcon } from "@/components/app/icons";
 
 const STEPS = [
@@ -350,6 +351,14 @@ export function SignupFlow() {
               blurb="Use the work email your team already knows you by."
               onSubmit={onContinue}
             >
+              <div style={{ marginBottom: 4 }}>
+                <GoogleButton />
+              </div>
+              <div className="flex items-center gap-2.5" style={{ margin: "6px 0 14px" }}>
+                <span style={{ flex: 1, height: 1, background: "var(--border)" }} />
+                <span style={{ fontSize: 11, color: "var(--muted)" }}>OR</span>
+                <span style={{ flex: 1, height: 1, background: "var(--border)" }} />
+              </div>
               <Field label="Full name" id="signup-name" error={errors.name}>
                 <input
                   id="signup-name"

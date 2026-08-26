@@ -5,6 +5,8 @@ import { useAsyncResource } from "@/lib/useAsyncData";
 import { getAnalytics } from "@/lib/data";
 import { AreaChart } from "@/components/app/AreaChart";
 import { Donut } from "@/components/app/Donut";
+import { Gauge } from "@/components/app/Gauge";
+import { ColumnChart } from "@/components/app/ColumnChart";
 import { BarList } from "@/components/app/BarList";
 import { StatTile } from "@/components/app/StatTile";
 import { SkeletonCard } from "@/components/app/Skeleton";
@@ -99,6 +101,35 @@ export default function AnalyticsPage() {
               <Donut
                 slices={severity.map((s) => ({ label: s.label, count: s.count, token: s.token }))}
                 centerLabel="findings"
+              />
+            </section>
+          </div>
+
+          {/* consistency health gauge + issues per review */}
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-3" style={{ marginBottom: 16 }}>
+            <section className="app-card" style={{ padding: 20 }} aria-labelledby="gauge-h">
+              <h2 id="gauge-h" className="kicker" style={{ marginBottom: 4 }}>
+                Consistency health
+              </h2>
+              <p style={{ color: "var(--muted)", fontSize: 12, margin: "0 0 10px" }}>
+                Your average across all reviews.
+              </p>
+              <Gauge value={totals.avgConsistency} label="average consistency" />
+            </section>
+
+            <section className="app-card xl:col-span-2" style={{ padding: 20 }} aria-labelledby="ipr-h">
+              <h2 id="ipr-h" className="kicker" style={{ marginBottom: 4 }}>
+                Issues found per review
+              </h2>
+              <p style={{ color: "var(--muted)", fontSize: 12, margin: "0 0 6px" }}>
+                Fewer, and shrinking, is the trend you want. Hover a bar for the count.
+              </p>
+              <ColumnChart
+                columns={trend.map((p) => ({
+                  label: p.label,
+                  value: p.issues,
+                  caption: p.company || undefined,
+                }))}
               />
             </section>
           </div>

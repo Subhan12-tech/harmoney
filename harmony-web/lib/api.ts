@@ -191,6 +191,56 @@ export function apiGet<T>(path: string, auth = true): Promise<T> {
   return request<T>(path, { method: "GET" }, auth);
 }
 
+export function apiPatch<T>(path: string, body?: unknown): Promise<T> {
+  return request<T>(path, { method: "PATCH", body: JSON.stringify(body ?? {}) }, true);
+}
+
+/* ============================================================
+   Identity — the signed-in user, their profile, and Google sign-in
+   ============================================================ */
+
+export interface Me {
+  id: string;
+  email: string;
+  full_name: string;
+  job_title?: string;
+  avatar?: string;
+  auth_provider?: string;
+  email_verified?: boolean;
+  role?: string | null;
+  org_id?: string;
+  is_superadmin?: boolean;
+  org_status?: string;
+  org_status_reason?: string;
+}
+
+export function getMe(): Promise<Me> {
+  return apiGet<Me>("/api/auth/me");
+}
+
+/** Edit your own name and/or avatar. The server refuses everything else. */
+export function updateProfile(patch: { full_name?: string; avatar?: string }): Promise<{
+  full_name: string;
+  avatar: string;
+}> {
+  return apiPatch("/api/auth/profile", patch);
+}
+
+export interface AuthConfig {
+  google_enabled: boolean;
+  google_client_id: string;
+}
+
+/** Public: tells the login page whether to render the Google button. */
+export function getAuthConfig(): Promise<AuthConfig> {
+  return apiGet<AuthConfig>("/api/auth/config", false);
+}
+
+/** Exchange a Google ID token (from the GIS button) for a Harmony session. */
+export function googleLogin(credential: string): Promise<Session> {
+  return apiPost<Session>("/api/auth/google", { credential }, false);
+}
+
 /* ============================================================
    Multipart upload + review submission
    ============================================================ */

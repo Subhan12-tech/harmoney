@@ -5,7 +5,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { useState } from "react";
 import { useRole } from "@/context/RoleContext";
-import { CURRENT_USER, NOTIFICATIONS, getOrg } from "@/lib/data";
+import { useMe, initialsOf } from "@/context/MeContext";
+import { NOTIFICATIONS, getOrg } from "@/lib/data";
+import { apiPost, clearSession } from "@/lib/api";
 import { Popover } from "./Popover";
 import { RoleSwitcher } from "./RoleSwitcher";
 import { BellIcon, SearchIcon } from "./icons";
@@ -27,10 +29,13 @@ export function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const { role, orgId } = useRole();
+  const { me } = useMe();
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
   const org = getOrg(orgId);
+  const displayName = me?.full_name?.trim() || me?.email || "Your account";
+  const initials = initialsOf(me?.full_name || me?.email || "");
 
   const menuItemStyle: React.CSSProperties = {
     display: "block",
@@ -189,37 +194,43 @@ export function Header() {
                 width: 32,
                 height: 32,
                 borderRadius: "50%",
+                overflow: "hidden",
                 background: "var(--surface-2)",
-                // --on-accent is the colour for text sitting ON a filled accent
-                // surface. This background stopped being the accent gradient in
-                // the restyle, so it was near-black text on a near-black film -
-                // invisible in dark mode. --text is what belongs on a surface.
+                // --text is what belongs on a plain surface. (This used to use
+                // --on-accent, which is for text on a FILLED accent - it read as
+                // near-black on the near-black film here and vanished in dark.)
                 color: "var(--text)",
                 border: "1px solid var(--border)",
                 fontSize: 11.5,
                 fontWeight: 600,
                 letterSpacing: "0.01em",
                 cursor: "pointer",
+                padding: 0,
               }}
             >
-              <span className="sr-only">Account menu for {CURRENT_USER.name}</span>
-              <span aria-hidden="true">{CURRENT_USER.initials}</span>
+              <span className="sr-only">Account menu for {displayName}</span>
+              {me?.avatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={me.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                <span aria-hidden="true">{initials}</span>
+              )}
             </button>
           )}
         >
           <div style={{ padding: 6 }}>
             <div style={{ padding: "9px 10px", borderBottom: "1px solid var(--border)", marginBottom: 4 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>{CURRENT_USER.name}</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>{displayName}</div>
               <div style={{ color: "var(--muted)", fontSize: 11 }}>
                 {role} · {org.name}
               </div>
             </div>
             <Link
-              href="/app/settings/org"
+              href="/app/settings/profile"
               onClick={() => setProfileOpen(false)}
               style={{ ...menuItemStyle, color: "var(--text)" }}
             >
-              Profile &amp; preferences
+              Edit profile
             </Link>
             <Link
               href="/app/settings/security"
@@ -232,6 +243,9 @@ export function Header() {
               type="button"
               onClick={() => {
                 setProfileOpen(false);
+                // Best-effort server-side revoke, then clear locally regardless.
+                void apiPost("/api/auth/logout", {}, true).catch(() => {});
+                clearSession();
                 router.push("/login");
               }}
               style={{ ...menuItemStyle, color: "var(--accent)" }}

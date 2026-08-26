@@ -1,4 +1,5 @@
 import { RoleProvider } from "@/context/RoleContext";
+import { MeProvider } from "@/context/MeContext";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { ToastProvider } from "@/components/app/Toast";
 import { Sidebar } from "@/components/app/Sidebar";
@@ -20,6 +21,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthGuard>
       <RoleProvider>
+      <MeProvider>
       <ToastProvider>
         <div className="app-skin grid min-h-screen grid-cols-1 lg:grid-cols-[228px_minmax(0,1fr)]">
           <Sidebar />
@@ -32,6 +34,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </ToastProvider>
+      </MeProvider>
       </RoleProvider>
     </AuthGuard>
   );

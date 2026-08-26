@@ -61,10 +61,17 @@ class User(SQLModel, table=True):
     email: str = Field(index=True, unique=True)
     full_name: str = ""
     job_title: str = ""
-    password_hash: str
+    password_hash: str = ""          # empty for Google-only accounts (no password set)
     email_verified: bool = False
     is_active: bool = True
     is_superadmin: bool = False
+    # A small avatar stored as a data: URI. Kept on the user row rather than a
+    # blob store because it is tiny (capped on upload) and always wanted with
+    # the identity - one row read, no second fetch, no file service to run.
+    avatar: str = ""
+    # "password" or "google". Records how the account signs in so the UI can
+    # show it and Google logins skip the password path entirely.
+    auth_provider: str = "password"
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -213,6 +220,8 @@ class HistoryItem(SQLModel, table=True):
 # returned early on anything but SQLite, which would have left production
 # missing every column added after its first deploy.
 _COLUMN_PATCHES = {
+    "user": [("avatar", "VARCHAR NOT NULL DEFAULT ''"),
+             ("auth_provider", "VARCHAR NOT NULL DEFAULT 'password'")],
     "document": [("risk", "VARCHAR NOT NULL DEFAULT 'Low'")],
     "review": [("issues_json", "VARCHAR NOT NULL DEFAULT '[]'"),
                ("evidence_json", "VARCHAR NOT NULL DEFAULT '[]'")],

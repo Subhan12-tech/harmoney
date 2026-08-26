@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BrandPanel } from "@/components/auth/BrandPanel";
+import { GoogleButton } from "@/components/auth/GoogleButton";
 import { ApiError, apiGet, apiPost, saveSession, setSuperadmin, setUserId, type Session } from "@/lib/api";
 import { WarningIcon } from "@/components/app/icons";
 
@@ -197,7 +198,8 @@ export default function LoginPage() {
           </div>
 
           <div className="flex flex-col gap-2.5">
-            {["Google", "Microsoft", "enterprise SSO"].map((provider) => (
+            <GoogleButton onError={setError} />
+            {["Microsoft", "enterprise SSO"].map((provider) => (
               <button
                 key={provider}
                 type="button"

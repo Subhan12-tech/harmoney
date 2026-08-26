@@ -655,6 +655,7 @@ export const INTEGRATIONS = [
 ];
 
 export const SETTINGS_TABS = [
+  { key: "profile", label: "Profile" },
   { key: "org", label: "Organization" },
   { key: "members", label: "Members & Roles" },
   { key: "security", label: "Security" },

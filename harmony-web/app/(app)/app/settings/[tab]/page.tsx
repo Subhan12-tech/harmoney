@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { SETTINGS_TABS, type SettingsTab } from "@/lib/data";
 import { SettingsTabs } from "@/components/app/SettingsTabs";
 import { TeamMembers } from "@/components/app/TeamMembers";
+import { ProfilePanel } from "@/components/app/settings/ProfilePanel";
 import { OrganizationPanel } from "@/components/app/settings/OrganizationPanel";
 import { SecurityPanel } from "@/components/app/settings/SecurityPanel";
 import { ApiPanel } from "@/components/app/settings/ApiPanel";
@@ -23,6 +24,7 @@ export default function SettingsPage({ params }: { params: { tab: string } }) {
     <>
       <SettingsTabs active={key} />
 
+      {key === "profile" && <ProfilePanel />}
       {key === "org" && <OrganizationPanel />}
       {key === "members" && <TeamMembers compact />}
       {key === "security" && <SecurityPanel />}

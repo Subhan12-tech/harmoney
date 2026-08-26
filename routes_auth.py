@@ -18,6 +18,14 @@ from auth import (hash_password, verify_password, create_token, current_user,
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
+# Google sign-in. The client id is PUBLIC (it ships to the browser); it is only
+# a valid audience, not a secret. Sign-in is enabled only when it is set.
+GOOGLE_CLIENT_ID = (os.getenv("GOOGLE_CLIENT_ID") or "").strip()
+
+# An avatar is a data: URI on the user row. ~1.4M chars ≈ a 1MB image once
+# base64-encoded; anything larger is refused rather than bloating every /me.
+MAX_AVATAR_CHARS = 1_400_000
+
 
 # ----------------------------------------------------------------------------
 # LOGIN THROTTLE — slow password guessing to a crawl.
@@ -189,6 +197,77 @@ def login(body: LoginIn, request: Request):
             "org_status": ostatus, "org_status_reason": oreason, "is_superadmin": is_sa}
 
 
+# ============================================================================
+# GOOGLE SIGN-IN
+# ============================================================================
+
+@router.get("/config")
+def auth_config():
+    """Public bootstrap for the login page — tells the static frontend whether
+    to show the Google button, and with which (public) client id."""
+    return {"google_enabled": bool(GOOGLE_CLIENT_ID), "google_client_id": GOOGLE_CLIENT_ID}
+
+
+class GoogleIn(BaseModel):
+    credential: str
+
+
+@router.post("/google")
+def google_login(body: GoogleIn, request: Request):
+    """Sign in (or sign up) with a verified Google ID token.
+
+    New Google users get a workspace exactly like a normal signup - pending
+    until approved in approval mode - so Google is a faster front door, not a
+    way around the licence gate. An existing email signs straight in; the two
+    are linked by email.
+    """
+    import google_auth
+    try:
+        claims = google_auth.verify_google_token(body.credential, GOOGLE_CLIENT_ID)
+    except ValueError as e:
+        raise HTTPException(401, str(e))
+
+    email = (claims.get("email") or "").strip().lower()
+    name = (claims.get("name") or email.split("@")[0]).strip()
+    picture = (claims.get("picture") or "").strip()
+
+    with Session(engine) as s:
+        user = s.exec(select(User).where(User.email == email)).first()
+        new_user = user is None
+        if new_user:
+            owner = is_platform_owner(email)
+            user = User(email=email, full_name=name, password_hash="",
+                        email_verified=True, is_superadmin=owner,
+                        auth_provider="google", avatar=picture)
+            org = Organization(name=f"{name}'s workspace", slug=_slug(name),
+                               status="active" if owner else new_org_status())
+            if s.exec(select(Organization).where(Organization.slug == org.slug)).first():
+                org.slug = org.slug + "-" + user.id[:4]
+            s.add(user); s.add(org); s.commit(); s.refresh(user); s.refresh(org)
+            s.add(Membership(user_id=user.id, org_id=org.id, role="owner"))
+            s.add(Subscription(org_id=org.id, plan="starter", seats=5))
+            s.commit()
+        else:
+            # Existing account signing in with Google. Promote the platform owner
+            # on sight, and adopt the Google photo only if they have none yet.
+            if is_platform_owner(email) and not user.is_superadmin:
+                user.is_superadmin = True
+            if not user.avatar and picture:
+                user.avatar = picture
+            s.add(user); s.commit(); s.refresh(user)
+        uid, is_sa = user.id, user.is_superadmin
+
+    m = user_membership(uid)
+    org_id = m.org_id if m else None
+    role = m.role if m else None
+    audit(org_id or "", uid, "user.signup" if new_user else "user.login", f"google:{email}")
+    token = create_token(uid, org_id, request.headers.get("user-agent", ""),
+                         request.client.host if request.client else "")
+    ostatus, oreason = org_status(org_id or "")
+    return {"token": token, "org_id": org_id, "role": role,
+            "org_status": ostatus, "org_status_reason": oreason, "is_superadmin": is_sa}
+
+
 @router.post("/logout")
 def logout(user: User = Depends(current_user), org_id: str = Depends(org_id_unchecked)):
     # is user ki current sessions revoke (simple: sab active revoke)
@@ -217,10 +296,45 @@ def me(user: User = Depends(current_user), org_id: str = Depends(org_id_unchecke
     return {
         "id": user.id, "email": user.email, "full_name": user.full_name,
         "job_title": user.job_title, "email_verified": user.email_verified,
+        "avatar": user.avatar, "auth_provider": user.auth_provider,
         "org_id": org_id, "role": m.role if m else None,
         "is_superadmin": user.is_superadmin,
         "org_status": ostatus, "org_status_reason": oreason,
     }
+
+
+class ProfileIn(BaseModel):
+    full_name: str | None = None
+    avatar: str | None = None       # a data:image/... URI, or "" to clear
+
+
+@router.patch("/profile")
+def update_profile(body: ProfileIn, user: User = Depends(current_user),
+                   org_id: str = Depends(org_id_unchecked)):
+    """Edit your own name and avatar. Deliberately cannot touch the organization
+    or the role - those belong to org admins, not to editing your own profile."""
+    with Session(engine) as s:
+        u = s.get(User, user.id)
+        if not u:
+            raise HTTPException(404, "User not found.")
+        if body.full_name is not None:
+            name = body.full_name.strip()
+            if not name:
+                raise HTTPException(400, "Name cannot be empty.")
+            if len(name) > 120:
+                raise HTTPException(400, "That name is too long.")
+            u.full_name = name
+        if body.avatar is not None:
+            av = body.avatar.strip()
+            if av and not av.startswith("data:image/"):
+                raise HTTPException(400, "Avatar must be an uploaded image.")
+            if len(av) > MAX_AVATAR_CHARS:
+                raise HTTPException(400, "That image is too large. Please use one under about 1MB.")
+            u.avatar = av
+        s.add(u); s.commit(); s.refresh(u)
+        out = {"full_name": u.full_name, "avatar": u.avatar}
+    audit(org_id, user.id, "user.profile_updated", "")
+    return out
 
 # ============================================================================
 # EMAIL VERIFICATION
