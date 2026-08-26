@@ -15,6 +15,7 @@ import {
   moveDocument,
   bulkDeleteDocuments,
   listDocumentsInFolder,
+  listAllDocuments,
   uploadToFolder,
   type FolderNode,
   type FolderDoc,
@@ -85,7 +86,10 @@ export function FolderBrowser() {
   const loadDocs = useCallback(async () => {
     setDocsLoading(true);
     try {
-      const r = await listDocumentsInFolder(selected);
+      // The root row shows EVERY document in the workspace, not just unfiled
+      // ones - so "All documents" is literally that, and selecting all here
+      // reaches documents inside folders too. A specific folder shows only its own.
+      const r = selected === null ? await listAllDocuments() : await listDocumentsInFolder(selected);
       setDocs(r.documents);
     } catch (err) {
       toast(err instanceof ApiError ? err.message : "Could not load documents.");
@@ -302,11 +306,11 @@ export function FolderBrowser() {
           )}
         </div>
 
-        {/* root row */}
+        {/* root row — shows the workspace total (every folder + unfiled) */}
         <TreeRow
           label="All documents"
           icon={<FolderIcon size={15} />}
-          count={rootDocCount}
+          count={rootDocCount + folders.reduce((sum, f) => sum + f.doc_count, 0)}
           active={selected === null}
           depth={0}
           onClick={() => setSelected(null)}

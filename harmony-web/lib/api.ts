@@ -306,10 +306,14 @@ export interface FolderDoc {
   submitted_by?: string;
 }
 
-/** Documents in one folder — pass "root" for unorganised, omit for the whole workspace. */
-export function listDocumentsInFolder(folderId: string | null): Promise<{ documents: FolderDoc[] }> {
-  const q = folderId === null ? "root" : folderId;
-  return apiGet(`/api/documents?folder_id=${encodeURIComponent(q)}`);
+/** Documents in one folder. Pass "root" for only unfiled, or a folder id. */
+export function listDocumentsInFolder(folderId: string): Promise<{ documents: FolderDoc[] }> {
+  return apiGet(`/api/documents?folder_id=${encodeURIComponent(folderId)}`);
+}
+
+/** Every document in the workspace, across all folders. */
+export function listAllDocuments(): Promise<{ documents: FolderDoc[] }> {
+  return apiGet("/api/documents");
 }
 
 /* ============================================================
