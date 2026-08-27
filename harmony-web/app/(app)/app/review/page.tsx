@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useRole } from "@/context/RoleContext";
@@ -18,6 +18,8 @@ import {
 } from "@/lib/style";
 import { WorkflowStepper } from "@/components/app/WorkflowStepper";
 import { ReviewPanel } from "@/components/app/ReviewPanel";
+import { DraftViewer, findMatches, sentenceAt } from "@/components/app/DraftViewer";
+import { SearchEvidence } from "@/components/app/SearchEvidence";
 import type { Resolution } from "@/components/app/SuggestionEditor";
 import { Modal } from "@/components/app/Modal";
 import { Skeleton } from "@/components/app/Skeleton";
@@ -42,8 +44,10 @@ function ReviewPageInner() {
   const { data: bundle, loading } = useAsyncResource(() => getReview(orgId, params.id), [orgId, params.id]);
 
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
-  /** Free-text filter over the findings — "revenue", "headcount", "2027". */
+  /** The reviewer's manual search over the DRAFT text itself. */
   const [issueQuery, setIssueQuery] = useState("");
+  /** Which occurrence of the search term is currently selected. */
+  const [activeMatch, setActiveMatch] = useState(0);
   const [stageIndex, setStageIndex] = useState(0);
   /**
     * How each finding was closed out, keyed by issue id — including the exact
@@ -76,21 +80,37 @@ function ReviewPageInner() {
   const byId = useMemo(() => new Map(visibleIssues.map((i) => [i.id, i])), [visibleIssues]);
   const active: Issue | undefined = (selectedIssueId ? byId.get(selectedIssueId) : undefined) ?? visibleIssues[0];
 
-  /**
-   * Findings matching the search box. Searches everything a person might type:
-   * the flagged sentence, the reason, the quoted prior statement, the source
-   * document and the severity - so "revenue", "2027", "high" and "Q3 call" all
-   * find what the reader means.
-   */
-  const matchedIssues = useMemo(() => {
-    const q = issueQuery.trim().toLowerCase();
-    if (!q) return visibleIssues;
-    return visibleIssues.filter((i) =>
-      [i.phrase, i.reason, i.evidenceQuote, i.evidenceDoc, i.severity]
-        .filter(Boolean)
-        .some((f) => String(f).toLowerCase().includes(q)),
-    );
-  }, [visibleIssues, issueQuery]);
+  const rawDraft = detail?.rawDraft ?? "";
+
+  /** Every occurrence of the search term in the draft, as character offsets. */
+  const searchSpans = useMemo(() => findMatches(rawDraft, issueQuery), [rawDraft, issueQuery]);
+
+  // A new query starts at the first hit rather than keeping a stale index.
+  useEffect(() => {
+    setActiveMatch(0);
+  }, [issueQuery]);
+
+  const currentSpan = searchSpans[activeMatch];
+  /** The sentence around the selected hit - the context sent for source evidence. */
+  const currentPassage = useMemo(
+    () => (currentSpan ? sentenceAt(rawDraft, currentSpan.start) : ""),
+    [rawDraft, currentSpan],
+  );
+
+  /** An AI finding covering the selected hit, if there is one. */
+  const relatedFinding = useMemo(() => {
+    if (!currentSpan || !detail) return undefined;
+    const hit = detail.issueSpans.find((s) => s.start <= currentSpan.start && s.end >= currentSpan.end);
+    return hit ? visibleIssues.find((i) => i.id === hit.id) : undefined;
+  }, [currentSpan, detail, visibleIssues]);
+
+  const step = useCallback(
+    (delta: number) => {
+      if (searchSpans.length === 0) return;
+      setActiveMatch((i) => (i + delta + searchSpans.length) % searchSpans.length);
+    },
+    [searchSpans.length],
+  );
 
   const highCount = visibleIssues.filter((i) => i.severity === "High").length;
   const unresolved = visibleIssues.filter((i) => !resolutions[i.id]).length;
@@ -181,22 +201,28 @@ function ReviewPageInner() {
 
       <WorkflowStepper currentIndex={stageIndex} />
 
-      {/* ---- Find a specific finding ---- */}
-      {analysed && visibleIssues.length > 0 && (
+      {/* ---- Search this draft ---- */}
+      {analysed && rawDraft && (
         <section className="app-card" style={{ padding: "12px 16px", margin: "14px 0 4px" }}>
-          <label htmlFor="issue-search" className="sr-only">
-            Search the findings
+          <label htmlFor="draft-search" className="sr-only">
+            Search this draft
           </label>
           <div className="flex items-center gap-2">
             <span style={{ color: "var(--faint)", flex: "none" }}>
               <SearchIcon size={15} />
             </span>
             <input
-              id="issue-search"
+              id="draft-search"
               type="search"
               value={issueQuery}
               onChange={(e) => setIssueQuery(e.target.value)}
-              placeholder="Search findings — try revenue, headcount, a date, or High"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  step(e.shiftKey ? -1 : 1);
+                }
+              }}
+              placeholder="Search this draft — a word, number, date, or phrase"
               style={{
                 flex: 1,
                 minWidth: 0,
@@ -208,76 +234,60 @@ function ReviewPageInner() {
                 fontFamily: "inherit",
               }}
             />
-            <span style={{ color: "var(--muted)", fontSize: 12, whiteSpace: "nowrap" }}>
-              {issueQuery.trim()
-                ? `${matchedIssues.length} of ${visibleIssues.length}`
-                : `${visibleIssues.length} finding${visibleIssues.length === 1 ? "" : "s"}`}
-            </span>
+            {issueQuery.trim() && (
+              <span className="flex items-center gap-1.5" style={{ fontSize: 12, color: "var(--muted)", whiteSpace: "nowrap" }}>
+                {searchSpans.length > 0 ? `${activeMatch + 1} / ${searchSpans.length}` : "0 matches"}
+                {searchSpans.length > 1 && (
+                  <>
+                    <button type="button" onClick={() => step(-1)} style={navBtnStyle} aria-label="Previous match">
+                      ↑
+                    </button>
+                    <button type="button" onClick={() => step(1)} style={navBtnStyle} aria-label="Next match">
+                      ↓
+                    </button>
+                  </>
+                )}
+              </span>
+            )}
             {issueQuery && (
               <button
                 type="button"
                 onClick={() => setIssueQuery("")}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: "var(--muted)",
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                  fontSize: 12,
-                }}
+                style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}
               >
                 Clear
               </button>
             )}
           </div>
 
-          {/* Results: click one to open it in the panel and highlight it. */}
-          {issueQuery.trim() && (
+          {issueQuery.trim() && searchSpans.length === 0 && (
+            <p style={{ color: "var(--muted)", fontSize: 13, margin: "8px 0 0" }}>
+              No matches found in this draft.
+            </p>
+          )}
+
+          {relatedFinding && (
             <div style={{ marginTop: 10, borderTop: "1px solid var(--border)", paddingTop: 8 }}>
-              {matchedIssues.length === 0 ? (
-                <p style={{ color: "var(--muted)", fontSize: 13, margin: 0 }}>
-                  No finding mentions “{issueQuery.trim()}”. It may be consistent with your history — or
-                  not covered by the evidence Harmony retrieved.
-                </p>
-              ) : (
-                <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 4 }}>
-                  {matchedIssues.map((i) => (
-                    <li key={i.id}>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedIssueId(i.id)}
-                        style={{
-                          width: "100%",
-                          textAlign: "left",
-                          display: "flex",
-                          alignItems: "flex-start",
-                          gap: 8,
-                          padding: "7px 8px",
-                          borderRadius: 7,
-                          border: "1px solid",
-                          borderColor: selectedIssueId === i.id ? "var(--border-strong)" : "transparent",
-                          background: selectedIssueId === i.id ? "var(--surface-2)" : "transparent",
-                          cursor: "pointer",
-                          fontFamily: "inherit",
-                          fontSize: 13,
-                          color: "var(--text)",
-                        }}
-                      >
-                        <span style={{ ...severityChipStyle(i.severity), flex: "none" }}>{i.severity}</span>
-                        <span style={{ minWidth: 0 }}>
-                          <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {i.phrase}
-                          </span>
-                          <span style={{ display: "block", color: "var(--muted)", fontSize: 11.5, marginTop: 1 }}>
-                            {resolutions[i.id] ? "Resolved · " : ""}
-                            {i.reason}
-                          </span>
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <span className="kicker" style={{ marginRight: 8 }}>
+                Related AI finding
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedIssueId(relatedFinding.id)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  fontSize: 13,
+                  color: "var(--text)",
+                  textDecoration: "underline",
+                  textUnderlineOffset: 3,
+                }}
+              >
+                {relatedFinding.reason}
+              </button>
             </div>
           )}
         </section>
@@ -294,65 +304,91 @@ function ReviewPageInner() {
             Draft document
           </h2>
 
-          {detail.draft.map((para, i) => {
-            const issue = para.issueId ? byId.get(para.issueId) : undefined;
-            const resolution = issue ? resolutions[issue.id] : undefined;
-            const applied = resolution?.status === "applied";
-            // Applying rewrites the sentence in place, so the reviewer reads
-            // the document as it would publish.
-            const shown = applied && resolution?.text ? resolution.text : issue?.phrase;
-            return (
-              <p
-                key={i}
-                style={{
-                  fontSize: 14.5,
-                  lineHeight: 1.8,
-                  color: "var(--text)",
-                  margin: "0 0 16px",
-                }}
-              >
-                {para.before}
-                {issue ? (
-                  <button
-                    type="button"
-                    onClick={() => setSelectedIssueId(issue.id)}
-                    aria-pressed={selectedIssueId === issue.id}
-                    style={{
-                      // An applied sentence stops carrying its severity and
-                      // reads as accepted copy instead.
-                      ...(applied
-                        ? resolvedHighlightStyle(selectedIssueId === issue.id)
-                        : highlightStyle(issue.severity, selectedIssueId === issue.id)),
-                      opacity: resolution?.status === "dismissed" ? 0.55 : 1,
-                      font: "inherit",
-                      color: "inherit",
-                      // Clear the button chrome one side at a time — `border:
-                      // none` would take the severity underline with it.
-                      borderTop: "none",
-                      borderRight: "none",
-                      borderLeft: "none",
-                      display: "inline",
-                      textAlign: "left",
-                    }}
-                  >
-                    {shown}
-                    <span className="sr-only">
-                      {applied
-                        ? ` — rewritten ${resolution?.edited ? "by the reviewer" : "from the AI suggestion"}, select to inspect`
-                        : ` — ${issue.severity} severity issue, select to inspect`}
-                    </span>
-                  </button>
-                ) : (
-                  // Before analysis the phrase is still part of the sentence.
-                  para.issueId && detail.issues.find((x) => x.id === para.issueId)?.phrase
-                )}
-                {para.after}
-              </p>
-            );
-          })}
+          {/* While a search is active the draft is rendered from raw text so search
+              hits and AI highlights can overlap on the same sentence. With no search
+              running, the original segment renderer is used unchanged - it also shows
+              applied rewrites, which the search view has no need to reproduce. */}
+          {searchSpans.length > 0 ? (
+            <DraftViewer
+              text={rawDraft}
+              issueSpans={detail.issueSpans}
+              issues={byId}
+              resolutions={resolutions}
+              selectedIssueId={selectedIssueId}
+              onSelectIssue={setSelectedIssueId}
+              searchSpans={searchSpans}
+              activeSearchIndex={activeMatch}
+            />
+          ) : (
+            <>
+            {detail.draft.map((para, i) => {
+              const issue = para.issueId ? byId.get(para.issueId) : undefined;
+              const resolution = issue ? resolutions[issue.id] : undefined;
+              const applied = resolution?.status === "applied";
+              // Applying rewrites the sentence in place, so the reviewer reads
+              // the document as it would publish.
+              const shown = applied && resolution?.text ? resolution.text : issue?.phrase;
+              return (
+                <p
+                  key={i}
+                  style={{
+                    fontSize: 14.5,
+                    lineHeight: 1.8,
+                    color: "var(--text)",
+                    margin: "0 0 16px",
+                  }}
+                >
+                  {para.before}
+                  {issue ? (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedIssueId(issue.id)}
+                      aria-pressed={selectedIssueId === issue.id}
+                      style={{
+                        // An applied sentence stops carrying its severity and
+                        // reads as accepted copy instead.
+                        ...(applied
+                          ? resolvedHighlightStyle(selectedIssueId === issue.id)
+                          : highlightStyle(issue.severity, selectedIssueId === issue.id)),
+                        opacity: resolution?.status === "dismissed" ? 0.55 : 1,
+                        font: "inherit",
+                        color: "inherit",
+                        // Clear the button chrome one side at a time — `border:
+                        // none` would take the severity underline with it.
+                        borderTop: "none",
+                        borderRight: "none",
+                        borderLeft: "none",
+                        display: "inline",
+                        textAlign: "left",
+                      }}
+                    >
+                      {shown}
+                      <span className="sr-only">
+                        {applied
+                          ? ` — rewritten ${resolution?.edited ? "by the reviewer" : "from the AI suggestion"}, select to inspect`
+                          : ` — ${issue.severity} severity issue, select to inspect`}
+                      </span>
+                    </button>
+                  ) : (
+                    // Before analysis the phrase is still part of the sentence.
+                    para.issueId && detail.issues.find((x) => x.id === para.issueId)?.phrase
+                  )}
+                  {para.after}
+                </p>
+              );
+            })}
+            </>
+          )}
         </section>
 
-        {analysed && active && (
+        {/* While searching, the right column shows the reviewer's own
+            comparison - draft passage against source evidence - instead of the
+            AI's finding. Clearing the search restores the AI panel. */}
+        {analysed && searchSpans.length > 0 && currentPassage && (
+          <SearchEvidence query={issueQuery} passage={currentPassage} />
+        )}
+
+        {analysed && searchSpans.length === 0 && active && (
           <ReviewPanel
             issue={active}
             resolution={resolutions[active.id]}
@@ -617,6 +653,19 @@ const modalTextStyle: React.CSSProperties = {
   fontSize: 13.5,
   color: "var(--text)",
   margin: "0 0 8px",
+};
+
+/** The small up/down buttons that step through search matches. */
+const navBtnStyle: React.CSSProperties = {
+  background: "var(--surface-2)",
+  border: "1px solid var(--border)",
+  borderRadius: 5,
+  color: "var(--text)",
+  cursor: "pointer",
+  fontFamily: "inherit",
+  fontSize: 11,
+  lineHeight: 1,
+  padding: "3px 6px",
 };
 
 /** `useSearchParams` requires a Suspense boundary to prerender. */

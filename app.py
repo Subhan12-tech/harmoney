@@ -217,6 +217,38 @@ def search(q: str, user: User = Depends(current_user), org_id: str = Depends(cur
     return {"related": harmony.retrieve_context(q, k=5)}
 
 
+class EvidenceSearchIn(BaseModel):
+    query: str
+    passage: str = ""      # the draft sentence the reviewer is looking at
+
+
+@app.post("/api/search_evidence")
+def search_evidence(body: EvidenceSearchIn, user: User = Depends(current_user),
+                    org_id: str = Depends(current_org_id)):
+    """Source evidence for a reviewer's manual search of a draft.
+
+    An INVESTIGATION endpoint, not a finding generator: it returns passages
+    verbatim from this workspace's corpus and says whether each is an exact
+    keyword hit or a semantically related one. It never judges, never writes to
+    anything, and never invents a passage - if the corpus holds nothing, the
+    list is empty and the UI says so.
+
+    Org-scoped through set_org, so it can only reach the caller's own workspace.
+    """
+    q = (body.query or "").strip()
+    if not q:
+        return {"evidence": [], "detail": "Enter a term to search for."}
+    harmony.set_org(org_id)
+    try:
+        return {"evidence": harmony.search_source_evidence(q, body.passage, k=5)}
+    except Exception as e:
+        print("search_evidence failed:", e)
+        # The draft-side search must keep working even if this fails.
+        return JSONResponse(
+            {"evidence": [], "error": "Source evidence could not be loaded. Try again."},
+            status_code=503)
+
+
 
 # ----------------------------------------------------------------------------
 # IMAGES

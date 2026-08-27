@@ -28,7 +28,12 @@ export interface ReviewDetail {
   /** False while a draft is still waiting to be sent for AI analysis. */
   analysed: boolean;
   draft: DraftSegment[];
+  /** The draft as one string. Search works on this and reports character
+   *  offsets, which is what lets search highlights and AI highlights coexist. */
+  rawDraft: string;
   issues: Issue[];
+  /** AI issue spans as character offsets into rawDraft, parallel to `issues`. */
+  issueSpans: { id: string; start: number; end: number }[];
   /** Present once a decision has been recorded. */
   reviewId?: string;
   decision?: "pending" | "approved" | "rejected";
@@ -180,7 +185,12 @@ export async function getReview(orgId: string, documentId: string): Promise<Revi
       stageIndex: toStageIndex(payload.document.status, latest),
       analysed: Boolean(latest),
       draft: toSegments(body, rawIssues),
+      rawDraft: body,
       issues: rawIssues.map(toIssue),
+      issueSpans: rawIssues
+        .map((it, i) => ({ id: `issue-${i}`, span: Array.isArray(it.span) ? it.span : null }))
+        .filter((x): x is { id: string; span: number[] } => !!x.span && x.span.length === 2)
+        .map((x) => ({ id: x.id, start: x.span[0], end: x.span[1] })),
       reviewId: latest?.id,
       decision: (latest?.status as ReviewDetail["decision"]) ?? "pending",
       suggestedFolderId: latest?.suggested_folder_id ?? null,

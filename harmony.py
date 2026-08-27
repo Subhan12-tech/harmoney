@@ -418,6 +418,88 @@ def extract_rating(text: str) -> float:
         return 0.0
 
 
+def search_source_evidence(query: str, passage: str = "", k: int = 5) -> list[dict]:
+    """Evidence from THIS org's corpus for a reviewer's manual search.
+
+    Two stages, as an investigation tool rather than a finding generator:
+
+      lexical  - chunks that literally contain the searched term. These are what
+                 the reviewer asked for, so they rank first and are labelled
+                 "exact".
+      semantic - chunks about the same subject as the draft passage the reviewer
+                 is looking at, even when the wording differs ("sales" against
+                 "revenue"). Labelled "related".
+
+    Nothing here decides anything. It returns passages verbatim from the store -
+    never generated text - so the reviewer compares for themselves. Org scoping
+    is inherited from get_org(), so a search can only ever reach the caller's own
+    workspace.
+    """
+    ensure_collection()
+    flt = None
+    _org = get_org()
+    if _org:
+        flt = Filter(must=[FieldCondition(key="metadata.org_id", match=MatchValue(value=_org))])
+
+    q = (query or "").strip()
+    out: list[dict] = []
+    seen: set[str] = set()
+
+    def add(doc, score, match_type):
+        body = doc.page_content
+        if body in seen:
+            return
+        seen.add(body)
+        md = doc.metadata or {}
+        out.append({
+            "text": body,
+            "source": md.get("source_file") or md.get("company") or "Unknown source",
+            "date": md.get("date") or "—",
+            "doc_type": (md.get("doc_type") or "history").replace("_", " ").title(),
+            "match_type": match_type,
+            "relevance": round(float(score), 3),
+        })
+
+    # Stage 1 - lexical. Retrieve on the term itself, then keep only chunks that
+    # really contain it, so "exact" means exact.
+    if q:
+        try:
+            for d, s in vector_store.similarity_search_with_score(q, k=k * 3, filter=flt):
+                if q.lower() in d.page_content.lower():
+                    add(d, s, "exact")
+        except Exception as e:
+            print("search_source_evidence lexical error:", e)
+
+    # Stage 2 - semantic, using the draft passage the reviewer is looking at.
+    #
+    # This stage NEEDS a floor and the lexical one does not: a chunk that
+    # literally contains the searched term has proved its own relevance, whereas
+    # similarity_search always returns its nearest neighbours even when nothing
+    # in the corpus is about the subject at all. Without a floor, searching
+    # "Asia-Pacific" against a corpus that never mentions it returned the
+    # revenue paragraph as "related" - which is exactly the false lead this
+    # panel must not manufacture.
+    #
+    # Measured on that case: a genuinely related hit ("sales" -> a revenue
+    # passage) scored 0.842, while an unrelated one ("Asia-Pacific" -> the same
+    # passage) scored 0.733. 0.78 sits between them. That is a narrow gap on a
+    # small sample, so it is env-tunable - lower it if real evidence is being
+    # withheld, raise it if unrelated passages appear.
+    semantic_floor = float(os.getenv("HARMONY_EVIDENCE_FLOOR", "0.78"))
+    ctx = (passage or q).strip()
+    if ctx:
+        try:
+            for d, s in vector_store.similarity_search_with_score(ctx, k=k, filter=flt):
+                if s >= semantic_floor:
+                    add(d, s, "related")
+        except Exception as e:
+            print("search_source_evidence semantic error:", e)
+
+    # Exact first, then by similarity within each group.
+    out.sort(key=lambda r: (0 if r["match_type"] == "exact" else 1, -r["relevance"]))
+    return out[:k]
+
+
 def retrieve_context(query: str, k: int = 6) -> str:
     ensure_collection()   # no-op once ready; self-heals a degraded boot
     # semantic search over Qdrant (agar org set hai to sirf usi org ka data)

@@ -290,6 +290,29 @@ export function moveDocument(docId: string, folder_id: string | null): Promise<u
   return apiPost(`/api/documents/${encodeURIComponent(docId)}/move`, { folder_id }, true);
 }
 
+export interface SourceEvidence {
+  text: string;
+  source: string;
+  date: string;
+  doc_type: string;
+  /** "exact" = the chunk literally contains the search term; "related" =
+   *  semantically about the same subject as the draft passage. */
+  match_type: "exact" | "related";
+  relevance: number;
+}
+
+/**
+ * Source evidence for a reviewer's manual draft search. Read-only and
+ * org-scoped; returns passages verbatim, never generated text, and never
+ * creates an AI finding.
+ */
+export function searchSourceEvidence(
+  query: string,
+  passage = "",
+): Promise<{ evidence: SourceEvidence[]; error?: string }> {
+  return apiPost("/api/search_evidence", { query, passage }, true);
+}
+
 /** Delete several documents (and their reviews) at once. Admin+. */
 export function bulkDeleteDocuments(ids: string[]): Promise<{ deleted: number; reviews_removed: number }> {
   return apiPost("/api/documents/bulk_delete", { ids }, true);
