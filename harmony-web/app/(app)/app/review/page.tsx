@@ -14,6 +14,7 @@ import {
   primaryButtonStyle,
   resolvedHighlightStyle,
   secondaryButtonStyle,
+  severityChipStyle,
 } from "@/lib/style";
 import { WorkflowStepper } from "@/components/app/WorkflowStepper";
 import { ReviewPanel } from "@/components/app/ReviewPanel";
@@ -21,7 +22,7 @@ import type { Resolution } from "@/components/app/SuggestionEditor";
 import { Modal } from "@/components/app/Modal";
 import { Skeleton } from "@/components/app/Skeleton";
 import { useToast } from "@/components/app/Toast";
-import { BackIcon, SpinnerIcon } from "@/components/app/icons";
+import { BackIcon, SearchIcon, SpinnerIcon } from "@/components/app/icons";
 
 /**
  * The review workspace.
@@ -41,6 +42,8 @@ function ReviewPageInner() {
   const { data: bundle, loading } = useAsyncResource(() => getReview(orgId, params.id), [orgId, params.id]);
 
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
+  /** Free-text filter over the findings — "revenue", "headcount", "2027". */
+  const [issueQuery, setIssueQuery] = useState("");
   const [stageIndex, setStageIndex] = useState(0);
   /**
     * How each finding was closed out, keyed by issue id — including the exact
@@ -72,6 +75,22 @@ function ReviewPageInner() {
 
   const byId = useMemo(() => new Map(visibleIssues.map((i) => [i.id, i])), [visibleIssues]);
   const active: Issue | undefined = (selectedIssueId ? byId.get(selectedIssueId) : undefined) ?? visibleIssues[0];
+
+  /**
+   * Findings matching the search box. Searches everything a person might type:
+   * the flagged sentence, the reason, the quoted prior statement, the source
+   * document and the severity - so "revenue", "2027", "high" and "Q3 call" all
+   * find what the reader means.
+   */
+  const matchedIssues = useMemo(() => {
+    const q = issueQuery.trim().toLowerCase();
+    if (!q) return visibleIssues;
+    return visibleIssues.filter((i) =>
+      [i.phrase, i.reason, i.evidenceQuote, i.evidenceDoc, i.severity]
+        .filter(Boolean)
+        .some((f) => String(f).toLowerCase().includes(q)),
+    );
+  }, [visibleIssues, issueQuery]);
 
   const highCount = visibleIssues.filter((i) => i.severity === "High").length;
   const unresolved = visibleIssues.filter((i) => !resolutions[i.id]).length;
@@ -161,6 +180,108 @@ function ReviewPageInner() {
       </p>
 
       <WorkflowStepper currentIndex={stageIndex} />
+
+      {/* ---- Find a specific finding ---- */}
+      {analysed && visibleIssues.length > 0 && (
+        <section className="app-card" style={{ padding: "12px 16px", margin: "14px 0 4px" }}>
+          <label htmlFor="issue-search" className="sr-only">
+            Search the findings
+          </label>
+          <div className="flex items-center gap-2">
+            <span style={{ color: "var(--faint)", flex: "none" }}>
+              <SearchIcon size={15} />
+            </span>
+            <input
+              id="issue-search"
+              type="search"
+              value={issueQuery}
+              onChange={(e) => setIssueQuery(e.target.value)}
+              placeholder="Search findings — try revenue, headcount, a date, or High"
+              style={{
+                flex: 1,
+                minWidth: 0,
+                background: "transparent",
+                border: "none",
+                outline: "none",
+                color: "var(--text)",
+                fontSize: 13.5,
+                fontFamily: "inherit",
+              }}
+            />
+            <span style={{ color: "var(--muted)", fontSize: 12, whiteSpace: "nowrap" }}>
+              {issueQuery.trim()
+                ? `${matchedIssues.length} of ${visibleIssues.length}`
+                : `${visibleIssues.length} finding${visibleIssues.length === 1 ? "" : "s"}`}
+            </span>
+            {issueQuery && (
+              <button
+                type="button"
+                onClick={() => setIssueQuery("")}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "var(--muted)",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  fontSize: 12,
+                }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          {/* Results: click one to open it in the panel and highlight it. */}
+          {issueQuery.trim() && (
+            <div style={{ marginTop: 10, borderTop: "1px solid var(--border)", paddingTop: 8 }}>
+              {matchedIssues.length === 0 ? (
+                <p style={{ color: "var(--muted)", fontSize: 13, margin: 0 }}>
+                  No finding mentions “{issueQuery.trim()}”. It may be consistent with your history — or
+                  not covered by the evidence Harmony retrieved.
+                </p>
+              ) : (
+                <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+                  {matchedIssues.map((i) => (
+                    <li key={i.id}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedIssueId(i.id)}
+                        style={{
+                          width: "100%",
+                          textAlign: "left",
+                          display: "flex",
+                          alignItems: "flex-start",
+                          gap: 8,
+                          padding: "7px 8px",
+                          borderRadius: 7,
+                          border: "1px solid",
+                          borderColor: selectedIssueId === i.id ? "var(--border-strong)" : "transparent",
+                          background: selectedIssueId === i.id ? "var(--surface-2)" : "transparent",
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                          fontSize: 13,
+                          color: "var(--text)",
+                        }}
+                      >
+                        <span style={{ ...severityChipStyle(i.severity), flex: "none" }}>{i.severity}</span>
+                        <span style={{ minWidth: 0 }}>
+                          <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {i.phrase}
+                          </span>
+                          <span style={{ display: "block", color: "var(--muted)", fontSize: 11.5, marginTop: 1 }}>
+                            {resolutions[i.id] ? "Resolved · " : ""}
+                            {i.reason}
+                          </span>
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* ---- Draft + evidence ---- */}
       <div className={`grid grid-cols-1 gap-4 ${analysed ? "xl:grid-cols-[1.4fr_1fr]" : ""}`}>
