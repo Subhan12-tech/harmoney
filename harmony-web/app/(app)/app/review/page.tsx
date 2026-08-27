@@ -236,7 +236,9 @@ function ReviewPageInner() {
             />
             {issueQuery.trim() && (
               <span className="flex items-center gap-1.5" style={{ fontSize: 12, color: "var(--muted)", whiteSpace: "nowrap" }}>
-                {searchSpans.length > 0 ? `${activeMatch + 1} / ${searchSpans.length}` : "0 matches"}
+                {searchSpans.length > 0
+                  ? `${activeMatch + 1} / ${searchSpans.length}${searchSpans[0]?.fuzzy ? " near" : ""}`
+                  : "0 matches"}
                 {searchSpans.length > 1 && (
                   <>
                     <button type="button" onClick={() => step(-1)} style={navBtnStyle} aria-label="Previous match">
@@ -264,6 +266,12 @@ function ReviewPageInner() {
             <p style={{ color: "var(--muted)", fontSize: 13, margin: "8px 0 0", lineHeight: 1.55 }}>
               No matches in this draft — the wording may differ, or the draft may not cover it. Still
               checking your history for it on the right.
+            </p>
+          )}
+
+          {searchSpans[0]?.fuzzy && (
+            <p style={{ color: "var(--muted)", fontSize: 12.5, margin: "8px 0 0", lineHeight: 1.55 }}>
+              No exact match for “{issueQuery.trim()}”, so these are the closest words in the draft.
             </p>
           )}
 

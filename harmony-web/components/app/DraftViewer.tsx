@@ -8,6 +8,8 @@ export interface SpanMark {
   id: string;
   start: number;
   end: number;
+  /** True when this came from the near-match fallback, not an exact hit. */
+  fuzzy?: boolean;
 }
 
 /**
@@ -123,16 +125,47 @@ export function DraftViewer({
   );
 }
 
+/** Levenshtein distance, capped: anything past `max` is not worth measuring. */
+function editDistance(a: string, b: string, max = 2): number {
+  if (Math.abs(a.length - b.length) > max) return max + 1;
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    let best = i;
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+      if (cur[j] < best) best = cur[j];
+    }
+    if (best > max) return max + 1;   // whole row already too far
+    prev = cur;
+  }
+  return prev[b.length];
+}
+
 /**
- * Find every occurrence of `query` in `text`, case-insensitively.
+ * Find occurrences of `query` in `text`, case-insensitively.
  *
- * Literal matching, with the query escaped: a reviewer typing "$1.02 billion",
- * "21%" or "(a)" means those characters, not a regular expression, and an
- * unescaped "." or "$" would silently match the wrong things.
+ * Exact substring first, because that is what the reviewer literally asked for
+ * and it must never be diluted. The query is regex-escaped: someone typing
+ * "$1.02 billion", "21%" or "(a)" means those characters, and an unescaped "."
+ * or "$" would quietly match the wrong things.
+ *
+ * NEAR MATCHES only when the exact search finds nothing. A reviewer who types
+ * "managment" means "management", and returning zero results for a one-letter
+ * slip makes the feature look broken - that exact typo is what prompted this.
+ * The fallback matches whole words that are either
+ *   - within an edit distance of 2 (typos: managment -> management), or
+ *   - extensions of the query (manage -> management, custom -> customer)
+ * and only for queries of 4+ characters, so short strings cannot drag in half
+ * the document. `fuzzy` on the result tells the UI to say so, because a reviewer
+ * must know they are looking at approximate hits.
  */
 export function findMatches(text: string, query: string): SpanMark[] {
   const q = query.trim();
   if (!q || !text) return [];
+
+  // ---- exact ----
   const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const out: SpanMark[] = [];
   try {
@@ -149,7 +182,25 @@ export function findMatches(text: string, query: string): SpanMark[] {
   } catch {
     return [];
   }
-  return out;
+  if (out.length > 0) return out;
+
+  // ---- near matches (only if nothing exact) ----
+  const ql = q.toLowerCase();
+  if (ql.length < 4 || /\s/.test(ql)) return out;   // too short, or a phrase
+
+  const near: SpanMark[] = [];
+  const wordRe = /[\p{L}\p{N}][\p{L}\p{N}'-]*/gu;
+  let w: RegExpExecArray | null;
+  while ((w = wordRe.exec(text)) !== null) {
+    const word = w[0].toLowerCase();
+    if (Math.abs(word.length - ql.length) > 4) continue;
+    const isExtension = word.startsWith(ql) || ql.startsWith(word);
+    if (isExtension || editDistance(ql, word, 2) <= 2) {
+      near.push({ id: `s-${w.index}`, start: w.index, end: w.index + w[0].length, fuzzy: true });
+      if (near.length > 200) break;
+    }
+  }
+  return near;
 }
 
 /** The sentence containing an offset — the context shown beside a match. */
