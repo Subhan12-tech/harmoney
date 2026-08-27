@@ -18,7 +18,7 @@ import {
 } from "@/lib/style";
 import { WorkflowStepper } from "@/components/app/WorkflowStepper";
 import { ReviewPanel } from "@/components/app/ReviewPanel";
-import { DraftViewer, findMatches, sentenceAt } from "@/components/app/DraftViewer";
+import { DraftViewer, findMatches } from "@/components/app/DraftViewer";
 import { SearchEvidence } from "@/components/app/SearchEvidence";
 import type { Resolution } from "@/components/app/SuggestionEditor";
 import { Modal } from "@/components/app/Modal";
@@ -63,6 +63,13 @@ function ReviewPageInner() {
 
   const detail = bundle?.detail;
   const document = bundle?.document;
+
+  // A different document is a different search context. Without this the match
+  // index (and so the evidence lookup) could carry over from the document you
+  // were just looking at - results attributed to the wrong draft.
+  useEffect(() => {
+    setActiveMatch(0);
+  }, [params.id]);
 
   // Seed the local workflow/selection whenever a different document loads.
   useEffect(() => {
@@ -112,11 +119,6 @@ function ReviewPageInner() {
   );
 
   const currentSpan = searchSpans[activeMatch];
-  /** The sentence around the selected hit - the context sent for source evidence. */
-  const currentPassage = useMemo(
-    () => (currentSpan ? sentenceAt(rawDraft, currentSpan.start) : ""),
-    [rawDraft, currentSpan],
-  );
 
   /** An AI finding covering the selected hit, if there is one. */
   const relatedFinding = useMemo(() => {
@@ -432,7 +434,16 @@ function ReviewPageInner() {
             not" is a finding in itself (a possible omission), and silence would
             hide it. */}
         {analysed && issueQuery.trim() && (
-          <SearchEvidence query={issueQuery} passage={currentPassage} />
+          <SearchEvidence
+            query={issueQuery}
+            draftText={rawDraft}
+            draftSpans={searchSpans}
+            activeIndex={activeMatch}
+            onSelectDraftMatch={(i) => {
+              setActiveMatch(i);
+              setScrollNonce((n) => n + 1);   // jump to it even if already selected
+            }}
+          />
         )}
 
         {analysed && !issueQuery.trim() && active && (
