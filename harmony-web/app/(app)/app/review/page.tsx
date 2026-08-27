@@ -261,8 +261,9 @@ function ReviewPageInner() {
           </div>
 
           {issueQuery.trim() && searchSpans.length === 0 && (
-            <p style={{ color: "var(--muted)", fontSize: 13, margin: "8px 0 0" }}>
-              No matches found in this draft.
+            <p style={{ color: "var(--muted)", fontSize: 13, margin: "8px 0 0", lineHeight: 1.55 }}>
+              No matches in this draft — the wording may differ, or the draft may not cover it. Still
+              checking your history for it on the right.
             </p>
           )}
 
@@ -384,11 +385,15 @@ function ReviewPageInner() {
         {/* While searching, the right column shows the reviewer's own
             comparison - draft passage against source evidence - instead of the
             AI's finding. Clearing the search restores the AI panel. */}
-        {analysed && searchSpans.length > 0 && currentPassage && (
+        {/* Shown whenever a search is running - including when the term is NOT
+            in the draft, because "your history covers this but the draft does
+            not" is a finding in itself (a possible omission), and silence would
+            hide it. */}
+        {analysed && issueQuery.trim() && (
           <SearchEvidence query={issueQuery} passage={currentPassage} />
         )}
 
-        {analysed && searchSpans.length === 0 && active && (
+        {analysed && !issueQuery.trim() && active && (
           <ReviewPanel
             issue={active}
             resolution={resolutions[active.id]}

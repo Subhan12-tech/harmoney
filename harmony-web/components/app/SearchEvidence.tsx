@@ -46,7 +46,11 @@ export function SearchEvidence({ query, passage }: { query: string; passage: str
   const [idx, setIdx] = useState(0);
 
   useEffect(() => {
-    if (!query.trim() || !passage) {
+    // Runs on the QUERY, not on the passage. A term that is not literally in
+    // the draft still deserves a source lookup - "nothing in the draft" and
+    // "nothing anywhere" are different answers, and only the second one means
+    // the reviewer can stop looking.
+    if (!query.trim()) {
       setEvidence([]);
       setState("idle");
       return;
@@ -76,18 +80,26 @@ export function SearchEvidence({ query, passage }: { query: string; passage: str
       <div className="kicker" style={{ marginBottom: 6 }}>
         Draft evidence
       </div>
-      <p
-        style={{
-          fontSize: 13.5,
-          margin: 0,
-          color: "var(--text)",
-          lineHeight: 1.6,
-          borderLeft: "2px solid var(--search-hit-border)",
-          paddingLeft: 10,
-        }}
-      >
-        <Marked text={passage} term={query} />
-      </p>
+      {passage ? (
+        <p
+          style={{
+            fontSize: 13.5,
+            margin: 0,
+            color: "var(--text)",
+            lineHeight: 1.6,
+            borderLeft: "2px solid var(--search-hit-border)",
+            paddingLeft: 10,
+          }}
+        >
+          <Marked text={passage} term={query} />
+        </p>
+      ) : (
+        <p style={{ fontSize: 13, margin: 0, color: "var(--muted)", lineHeight: 1.6 }}>
+          <strong style={{ color: "var(--text)" }}>Not mentioned in this draft.</strong> If your history
+          covers it, that may be information the draft has left out — worth checking whether the omission is
+          deliberate.
+        </p>
+      )}
 
       <div style={{ height: 1, background: "var(--border)", margin: "14px 0" }} />
 
