@@ -50,7 +50,6 @@ interface ApiIssue {
   quote: string;
   span?: [number, number] | number[];
   severity: string;
-  classification?: string;
   reason: string;
   evidence_doc?: string;
   evidence_date?: string;
@@ -92,7 +91,6 @@ function toIssue(raw: ApiIssue, index: number): Issue {
   return {
     id: `issue-${index}`,
     severity: toSeverity(raw.severity),
-    classification: raw.classification || undefined,
     phrase: raw.quote,
     reason: raw.reason,
     evidenceDoc: raw.evidence_doc || "Prior statement",

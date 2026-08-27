@@ -121,15 +121,10 @@ class Suggestion(BaseModel):
 class IssueItem(BaseModel):
     quote: str = Field(description="Exact sentence copied verbatim from the NEW DRAFT that is being flagged.")
     severity: Literal["low", "medium", "high"]
-    classification: Literal[
-        "Direct Contradiction", "Material Value Change", "Forecast/Target Change",
-        "Commitment Change", "Requirement Change", "Date Change", "Scope Change",
-        "Condition Change", "Omission",
-    ] = Field(description="The single kind of change this finding represents. Pick the ONE that fits best.")
-    reason: str = Field(description="Why this claim is inconsistent or unsupported, 1-2 sentences. Quantify numeric changes (absolute + percent, and percentage-POINTS when comparing two percentages).")
+    reason: str = Field(description="Why this claim is inconsistent or unsupported, 1-2 sentences.")
     evidence_index: int = Field(description="0-based index of the evidence chunk below that supports this finding, or -1 if none of them do.")
     evidence_quote: str = Field(description="Exact sentence copied verbatim from that evidence chunk. Empty string if evidence_index is -1.")
-    confidence: int = Field(description="0-100 confidence that this is a genuine, material inconsistency. Lower it when the period, scope, or definition is ambiguous.")
+    confidence: int = Field(description="0-100 confidence that this is a genuine, material inconsistency.")
     suggestion: str = Field(description="A safer, aligned rewording of the flagged sentence. Advisory only — never invent facts.")
 
 
@@ -287,16 +282,10 @@ SPLITTER = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
 # Measured, not guessed. Top-chunk similarity on the evaluation set:
 #   drafts with real contradictions   0.856 - 0.915
 #   draft whose topic is absent       0.818
-# 0.83 was chosen from that tiny sample - and it was too high. On real, varied
-# corpora, evidence that is genuinely about the draft routinely scores 0.72-0.83
-# (different phrasing, different chunk sizes), so a strict 0.83 SILENTLY DROPPED
-# the right evidence and the review found little or nothing. Retuned to 0.72:
-# measured on a 6-claim multi-topic draft it lifted findings from 1-4 to a full
-# 5/5, while a consistent draft and an unrelated draft both still returned ZERO -
-# the downstream grounding (exact-quote match) and verification passes are what
-# hold precision, so the floor can afford to let more evidence through. Still
-# configurable: raise it if false positives appear, lower it to catch more.
-RELEVANCE_FLOOR = float(os.getenv("HARMONY_RELEVANCE_FLOOR", "0.72"))
+# 0.83 sits in that gap. It is a narrow gap on a small sample, so it is
+# configurable - raise it if false positives persist, lower it if real findings
+# start disappearing.
+RELEVANCE_FLOOR = float(os.getenv("HARMONY_RELEVANCE_FLOOR", "0.83"))
 
 # multi-tenancy: har org ka data alag rakhne ke liye. run_review() ise set karta hai,
 # retrieve/add functions ise metadata filter/tag ke tor par use karte hain.
@@ -1028,22 +1017,12 @@ Numbered PAST-STATEMENT evidence chunks (your ONLY source of truth):
 NEW DRAFT:
 {draft_text}
 
-You compare business documents of ANY kind — financial, legal, policy, contractual,
-operational, product, HR — not only financial. Understand the meaning; do not do a
-text diff or match numbers blindly.
-
 For each sentence in the DRAFT that conflicts with, changes without explanation, or cannot be
 supported by the evidence chunks above, produce one issue with:
 - quote: copied EXACTLY (verbatim, word-for-word) from the DRAFT above.
-- classification: the ONE kind of change it is (Direct Contradiction, Material Value Change,
-  Forecast/Target Change, Commitment Change, Requirement Change, Date Change, Scope Change,
-  Condition Change, Omission).
 - evidence_index: the number of the evidence chunk that supports this finding.
 - evidence_quote: copied EXACTLY (verbatim) from that evidence chunk's text — never invent it.
 - severity, confidence, a short reason, and one advisory rewording suggestion.
-
-Before comparing any two facts, confirm they share the same ENTITY + METRIC + PERIOD +
-SCOPE + STATUS. Only then is a difference a possible inconsistency.
 
 Rules:
 - If you cannot find a supporting sentence in the evidence chunks, do not report that item.
@@ -1052,24 +1031,8 @@ Rules:
   being unverifiable or missing from the evidence - only for CONFLICTING with a
   chunk. But a claim that mischaracterises a trend the evidence does show - "held
   steady" where the evidence shows three consecutive declines - IS a conflict.
-- DIFFERENT PERIODS ARE NOT A CONTRADICTION. FY2025 actual vs FY2026 expected,
-  Q1 vs Q4, historical vs forecast — never flag these as conflicts unless the
-  draft explicitly restates the SAME period differently. A forecast replacing an
-  actual for a later period is a normal update, not an inconsistency.
-- ACTUAL vs FORECAST/TARGET/EXPECTED are different statuses; do not pit one
-  against the other as if they were the same claim.
-- NUMBERS: quantify the change. Distinguish a percentage change from a
-  percentage-POINT change (20%% -> 25%% is +5 points / +25%% relative, never
-  "+5%%"). For a range in the evidence ($905M-$925M), compare the draft value to
-  the low, high AND midpoint, not one endpoint. Ignore pure rounding/presentation
-  ("61.8%%" vs "about 62%%").
-- NEGATION flips meaning: "may" vs "may not", "required" vs "not required",
-  "including" vs "excluding" — treat as material.
-- QUALIFIER/CERTAINTY changes matter: "expects to" -> "will", "up to" -> "at
-  least", "subject to approval" -> unconditional — these change commitment.
 - Never invent or paraphrase a quote — copy it exactly, or don't use it.
-- Precision over noise: do NOT flag synonyms, restructuring, formatting, rounding,
-  new non-conflicting information, or legitimate elaboration.
+- Only flag genuinely material issues (numbers, dates, guidance, claims, terminology changes).
 - If the draft is fully consistent with the evidence, return an empty issues list.
 """
     structured_model = model.with_structured_output(IssuesList)
@@ -1093,7 +1056,6 @@ Rules:
             "quote": it.quote,
             "span": span,
             "severity": it.severity,
-            "classification": getattr(it, "classification", None),
             "reason": it.reason,
             "evidence_doc": ev_doc.metadata.get("source_file") or ev_doc.metadata.get("company", "Unknown source"),
             "evidence_date": ev_doc.metadata.get("date", "—"),
