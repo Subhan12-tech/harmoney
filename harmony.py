@@ -90,9 +90,19 @@ if not QDRANT_URL or not QDRANT_API_KEY:
 HARMONY_MODEL = os.getenv("HARMONY_MODEL", "mistral-small-2503")
 HARMONY_TEMPERATURE = float(os.getenv("HARMONY_TEMPERATURE", "0"))
 
+# max_retries: Mistral returns 503 "temporarily unavailable due to high load"
+# under its own capacity pressure, and a single failed call used to cost the
+# review actual findings - the pipeline caught the error, carried on, and
+# returned FEWER issues with no indication anything had gone wrong. A draft with
+# seven conflicts could report three, and nothing on screen said why. Retrying
+# with backoff turns most of those into a slower answer instead of a wrong one.
+HARMONY_MAX_RETRIES = int(os.getenv("HARMONY_MAX_RETRIES", "6"))
+
 model = ChatMistralAI(model=HARMONY_MODEL, temperature=HARMONY_TEMPERATURE,
-                      api_key=os.getenv("MISTRAL_API_KEY"))
-print(f"MODEL: {HARMONY_MODEL} at temperature {HARMONY_TEMPERATURE}")
+                      api_key=os.getenv("MISTRAL_API_KEY"),
+                      max_retries=HARMONY_MAX_RETRIES, timeout=120)
+print(f"MODEL: {HARMONY_MODEL} at temperature {HARMONY_TEMPERATURE} "
+      f"(max_retries={HARMONY_MAX_RETRIES})")
 
 
 # ============================================================================
@@ -1146,37 +1156,124 @@ Rules:
     try:
         result: IssuesList = structured_model.invoke(prompt)
     except Exception as e:
+        # A failed extraction is NOT "no issues found". Returning an empty list
+        # here is what made an outage look like a clean document - the worst
+        # possible failure for a consistency checker, because the reviewer sees
+        # nothing wrong and publishes. Say so explicitly instead.
         print("structured issues: model error:", e)
-        return {"issues": [], "messages": [{"role": "assistant", "content": f"Structured issue extraction failed: {e}"}]}
+        return {"issues": [], "evidence": evidence_list, "suggested_folder_id": suggested_folder_id,
+                "issues_incomplete": True,
+                "issues_error": f"{type(e).__name__}: {e}"[:300],
+                "messages": [{"role": "assistant",
+                              "content": "The consistency check could not be completed - the AI service was "
+                                         "unavailable. This is NOT a clean result; re-run the review."}]}
 
-    verified = []
-    for it in result.issues:
-        if not (0 <= it.evidence_index < len(docs)):
+    def _ground(issues) -> list[dict]:
+        """Keep only issues whose evidence quote is real and whose draft quote
+        can be located. Shared by the first pass and the sweep."""
+        out = []
+        for it in issues:
+            if not (0 <= it.evidence_index < len(docs)):
+                continue
+            ev_doc = docs[it.evidence_index]
+            if not _supported(it.evidence_quote, ev_doc.page_content):
+                continue
+            span = _locate_in_draft(it.quote, draft_text)
+            if span is None:
+                continue
+            out.append({
+                "quote": it.quote,
+                "span": span,
+                "severity": it.severity,
+                "reason": it.reason,
+                "evidence_doc": ev_doc.metadata.get("source_file") or ev_doc.metadata.get("company", "Unknown source"),
+                "evidence_date": ev_doc.metadata.get("date", "—"),
+                "evidence_source": (ev_doc.metadata.get("doc_type") or "history").replace("_", " ").title(),
+                "evidence_quote": it.evidence_quote,
+                "confidence": max(0, min(100, int(it.confidence))),
+                "suggestion": it.suggestion,
+            })
+        return out
+
+    verified = _ground(result.issues)
+
+    # ---- SECOND SWEEP -------------------------------------------------------
+    # The extractor satisfices: given a draft with several independent problems
+    # it reports the first few and stops, so a document with three conflicts
+    # reliably came back with two. Measured on the Meridian set, drafts 04, 07
+    # and 10 each lost exactly one finding this way.
+    #
+    # So ask again, about the sentences it did NOT flag, with the ones it did
+    # already listed as done. A narrower question over a shorter list is one the
+    # model answers completely. Only runs when something is left to check, and a
+    # failure leaves the first pass untouched.
+    flagged_spans = [c["span"] for c in verified]
+
+    def _already_flagged(sentence: str) -> bool:
+        pos = draft_text.find(sentence)
+        if pos < 0:
+            return False
+        end = pos + len(sentence)
+        return any(not (end <= s or pos >= e) for s, e in flagged_spans)
+
+    remaining = [s for s in _claim_sentences(draft_text) if not _already_flagged(s)]
+    if remaining and docs:
+        listing = "\n".join(f"- {s}" for s in remaining)
+        already = "\n".join(f"- {c['quote']}" for c in verified) or "(none yet)"
+        sweep_prompt = f"""{'-' * 60}
+A first pass over this draft already flagged these sentences:
+{already}
+
+Those are DONE - do not report them again.
+
+Now check ONLY the sentences below, one at a time, against the same evidence.
+Each is a sentence from the same draft that has not been examined yet. Some will
+be fine; report only those that genuinely conflict with an evidence chunk.
+
+SENTENCES STILL TO CHECK:
+{listing}
+
+Numbered PAST-STATEMENT evidence chunks (your ONLY source of truth):
+{evidence_block}
+
+Same rules as before: quote the draft sentence verbatim, quote the evidence
+verbatim, never invent either, and report nothing for a sentence the evidence
+does not actually contradict."""
+        try:
+            sweep = structured_model.invoke(sweep_prompt)
+            extra = _ground(sweep.issues)
+            if extra:
+                print(f"  second sweep: {len(extra)} further candidate(s) from {len(remaining)} unchecked sentence(s)")
+            verified.extend(extra)
+        except Exception as e:
+            print(f"  second sweep unavailable ({type(e).__name__}) - keeping first pass")
+
+    # ---- DEDUPE -------------------------------------------------------------
+    # The same conflict arrived twice (draft 06 reported one sentence twice),
+    # once from each pass or twice from one. Key on the draft span plus the
+    # evidence, so two genuinely different problems in one sentence still both
+    # survive.
+    seen, deduped = set(), []
+    for c in verified:
+        key = (c["span"][0], c["span"][1], " ".join(c["evidence_quote"].lower().split())[:120])
+        if key in seen:
             continue
-        ev_doc = docs[it.evidence_index]
-        if not _supported(it.evidence_quote, ev_doc.page_content):
-            continue
-        span = _locate_in_draft(it.quote, draft_text)
-        if span is None:
-            continue
-        verified.append({
-            "quote": it.quote,
-            "span": span,
-            "severity": it.severity,
-            "reason": it.reason,
-            "evidence_doc": ev_doc.metadata.get("source_file") or ev_doc.metadata.get("company", "Unknown source"),
-            "evidence_date": ev_doc.metadata.get("date", "—"),
-            "evidence_source": (ev_doc.metadata.get("doc_type") or "history").replace("_", " ").title(),
-            "evidence_quote": it.evidence_quote,
-            "confidence": max(0, min(100, int(it.confidence))),
-            "suggestion": it.suggestion,
-        })
+        seen.add(key)
+        deduped.append(c)
+    if len(deduped) != len(verified):
+        print(f"  dedupe: {len(verified) - len(deduped)} duplicate finding(s) removed")
+    verified = deduped
 
     # Grounding says the quote is real and locatable. Verification asks the
     # separate question of whether it actually contradicts anything.
     verified = _verify_issues(verified)
 
-    print(f"\n========== STRUCTURED ISSUES ==========\n{len(verified)}/{len(result.issues)} issues passed grounding and verification\n========================================\n")
+    # Most severe first, then earliest in the draft - a reviewer should meet the
+    # worst problem first, not whatever the model happened to emit first.
+    _rank = {"high": 0, "medium": 1, "low": 2}
+    verified.sort(key=lambda c: (_rank.get(str(c.get("severity", "")).lower(), 3), c["span"][0]))
+
+    print(f"\n========== STRUCTURED ISSUES ==========\n{len(verified)} issues passed grounding and verification\n========================================\n")
 
     return {"issues": verified, "evidence": evidence_list,
             "suggested_folder_id": suggested_folder_id,
