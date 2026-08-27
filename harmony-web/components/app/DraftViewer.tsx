@@ -33,6 +33,7 @@ export function DraftViewer({
   onSelectIssue,
   searchSpans,
   activeSearchIndex,
+  scrollNonce = 0,
 }: {
   text: string;
   issueSpans: SpanMark[];
@@ -42,6 +43,10 @@ export function DraftViewer({
   onSelectIssue: (id: string) => void;
   searchSpans: SpanMark[];
   activeSearchIndex: number;
+  /** Bumped on every Enter press so the scroll re-fires even when the active
+   *  match has not changed - with a single match, stepping is a no-op and
+   *  Enter would otherwise appear to do nothing at all. */
+  scrollNonce?: number;
 }) {
   const activeRef = useRef<HTMLSpanElement>(null);
 
@@ -49,7 +54,7 @@ export function DraftViewer({
   // the surrounding sentence, not a match jammed against the top edge.
   useEffect(() => {
     activeRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, [activeSearchIndex, searchSpans.length]);
+  }, [activeSearchIndex, searchSpans.length, scrollNonce]);
 
   if (!text) return null;
 

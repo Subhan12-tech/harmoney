@@ -125,8 +125,15 @@ function ReviewPageInner() {
     return hit ? visibleIssues.find((i) => i.id === hit.id) : undefined;
   }, [currentSpan, detail, visibleIssues]);
 
+  /** Re-fires the scroll on Enter even when the active match did not change. */
+  const [scrollNonce, setScrollNonce] = useState(0);
+
   const step = useCallback(
     (delta: number) => {
+      // Always bump the nonce, even with one match or none: pressing Enter has
+      // to produce a visible response, or the key reads as broken. With several
+      // matches it advances; with one it re-centres that one.
+      setScrollNonce((n) => n + 1);
       if (searchSpans.length === 0) return;
       setActiveMatch((i) => (i + delta + searchSpans.length) % searchSpans.length);
     },
@@ -272,6 +279,11 @@ function ReviewPageInner() {
                 )}
               </span>
             )}
+            {searchSpans.length > 1 && (
+              <span style={{ fontSize: 11, color: "var(--faint)", whiteSpace: "nowrap" }}>
+                ↵ next
+              </span>
+            )}
             {issueQuery && (
               <button
                 type="button"
@@ -348,6 +360,7 @@ function ReviewPageInner() {
               onSelectIssue={setSelectedIssueId}
               searchSpans={searchSpans}
               activeSearchIndex={activeMatch}
+              scrollNonce={scrollNonce}
             />
           ) : (
             <>
