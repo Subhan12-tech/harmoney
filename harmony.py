@@ -960,6 +960,82 @@ Rating:
 # na mile, ya jiska draft-quote draft mein locate na ho, drop kar diya jata hai.
 # ============================================================================
 
+def _claim_sentences(draft_text: str, limit: int = 40) -> list[str]:
+    """Split a draft into the sentences worth checking, longest-first.
+
+    Each one becomes its own retrieval query, so a claim buried in the middle of
+    a long draft still gets its own evidence fetched. Very short fragments are
+    dropped - they carry no checkable claim and would only pull noise.
+    """
+    parts = re.split(r"(?<=[.!?])\s+|\n+", draft_text)
+    seen, out = set(), []
+    for p in parts:
+        s = p.strip()
+        if len(s) < 25:            # headings, list bullets, stray fragments
+            continue
+        key = s.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(s)
+    return out[:limit]
+
+
+def _retrieve_evidence(draft_text: str, flt) -> list:
+    """Evidence for the WHOLE draft, gathered per claim rather than in one shot.
+
+    A single whole-draft query was the real reason reviews missed findings. The
+    draft is embedded as one averaged vector, so retrieval returns whatever
+    matches the draft's overall topic - and with a realistic corpus of many
+    separate documents, the top k are dominated by the dominant theme while
+    specific claims (a warranty term, a remote-work rule, a market) never get
+    their evidence fetched at all. Measured on a 10-fact corpus: whole-draft
+    k=8 returned 7 of the 10 relevant documents and spent a slot on noise, so
+    three contradictions were unfindable no matter how the prompt was worded.
+
+    Querying once per claim fixes that at the source: every sentence pulls its
+    own top matches, and the union is what the model sees. The earlier finding
+    that "more evidence is not better evidence" (k=8 -> 14 made things worse)
+    still holds and is respected here - the extra chunks a bigger k added were
+    noise from the SAME averaged query, whereas these are each targeted at a
+    specific sentence. PER_CLAIM_K is deliberately small for that reason.
+
+    Falls back to the original whole-draft query if anything goes wrong, so a
+    retrieval problem degrades instead of emptying the evidence.
+    """
+    per_claim_k = int(os.getenv("HARMONY_PER_CLAIM_K", "3"))
+    max_chunks = int(os.getenv("HARMONY_MAX_EVIDENCE", "24"))
+
+    claims = _claim_sentences(draft_text)
+    if not claims:
+        claims = [draft_text]
+
+    best: dict[str, tuple] = {}      # page_content -> (doc, best_score)
+    for claim in claims:
+        try:
+            for d, score in vector_store.similarity_search_with_score(claim, k=per_claim_k, filter=flt):
+                if score < RELEVANCE_FLOOR:
+                    continue
+                prev = best.get(d.page_content)
+                if prev is None or score > prev[1]:
+                    best[d.page_content] = (d, score)
+        except Exception as e:
+            print(f"  evidence retrieval failed for one claim ({type(e).__name__}) - continuing")
+
+    # Whole-draft pass as well: it catches evidence that matches the draft's
+    # overall subject without belonging to any single sentence.
+    try:
+        for d, score in vector_store.similarity_search_with_score(draft_text, k=8, filter=flt):
+            if score >= RELEVANCE_FLOOR and d.page_content not in best:
+                best[d.page_content] = (d, score)
+    except Exception:
+        pass
+
+    ranked = sorted(best.values(), key=lambda x: -x[1])[:max_chunks]
+    print(f"  evidence: {len(ranked)} chunk(s) from {len(claims)} claim quer{'y' if len(claims)==1 else 'ies'}")
+    return [d for d, _ in ranked]
+
+
 def structured_issues_agent(state: AgentState) -> dict:
     draft_text = state["draft_text"]
 
@@ -968,14 +1044,9 @@ def structured_issues_agent(state: AgentState) -> dict:
     if _org:
         flt = Filter(must=[FieldCondition(key="metadata.org_id", match=MatchValue(value=_org))])
     try:
-        # k=8. Raising it to 14 was tried and made things worse: a subtle-drift
-        # case went from 3/3 to 2/3, because the extra chunks were noise the
-        # model had to reason around. More evidence is not better evidence.
-        scored = vector_store.similarity_search_with_score(draft_text, k=8, filter=flt)
-        docs = [d for d, score in scored if score >= RELEVANCE_FLOOR]
-        if scored and not docs:
-            print(f"  issues: corpus has nothing about this draft "
-                  f"(best {scored[0][1]:.3f} < {RELEVANCE_FLOOR}) - reporting no issues")
+        docs = _retrieve_evidence(draft_text, flt)
+        if not docs:
+            print("  issues: corpus has nothing relevant to this draft - reporting no issues")
     except Exception as e:
         print("structured issues: evidence retrieval error:", e)
         docs = []
@@ -1035,6 +1106,26 @@ supported by the evidence chunks above, produce one issue with:
 - evidence_quote: copied EXACTLY (verbatim) from that evidence chunk's text — never invent it.
 - severity, confidence, a short reason, and one advisory rewording suggestion.
 
+METHOD - work through the draft exhaustively, not impressionistically:
+Take the draft ONE SENTENCE AT A TIME, from the first to the last. For each
+sentence, look for an evidence chunk about the SAME subject. If one exists and
+says something different, report it. Do not stop after the first few findings and
+do not summarise - a draft may contain many independent conflicts, and every one
+of them matters. Report EVERY sentence that conflicts, not a representative
+sample.
+
+Check each of these, because they are missed most often:
+- numbers, amounts and counts (revenue, headcount, units, prices)
+- percentages - and whether a change is percentage POINTS or a relative percent
+- dates, deadlines, expiry and effective dates
+- who is responsible or must approve (a changed role IS a conflict)
+- thresholds and limits ("above 50,000" vs "above 100,000")
+- frequency and duration ("monthly" vs "quarterly", "24 months" vs "12 months")
+- scope - who or where something applies to (all employees vs full-time only,
+  European market vs North American market)
+- negation and permission ("may work remotely" vs "may not work remotely")
+- commitment strength ("expects to" vs "will", "may" vs "must")
+
 Rules:
 - If you cannot find a supporting sentence in the evidence chunks, do not report that item.
 - ABSENCE OF EVIDENCE IS NOT A CONTRADICTION. The evidence below is a RETRIEVED
@@ -1042,6 +1133,11 @@ Rules:
   being unverifiable or missing from the evidence - only for CONFLICTING with a
   chunk. But a claim that mischaracterises a trend the evidence does show - "held
   steady" where the evidence shows three consecutive declines - IS a conflict.
+- Two figures for the SAME measure and period that are not identical always
+  conflict, however small the gap and however the draft hedges it.
+- Different periods, different entities or different scopes are NOT conflicts.
+  FY2025 actual against FY2026 forecast is a legitimate update, not a
+  contradiction.
 - Never invent or paraphrase a quote — copy it exactly, or don't use it.
 - Only flag genuinely material issues (numbers, dates, guidance, claims, terminology changes).
 - If the draft is fully consistent with the evidence, return an empty issues list.
