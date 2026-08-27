@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { Suspense, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useRole } from "@/context/RoleContext";
 import { useAsyncData } from "@/lib/useAsyncData";
 import { useUploads, type UploadKind } from "@/lib/useUploads";
@@ -56,7 +57,8 @@ const selectStyle: React.CSSProperties = {
   fontSize: 13,
 };
 
-export default function DocumentsPage() {
+function DocumentsPageInner() {
+  const search = useSearchParams();
   const { orgId } = useRole();
   const { toast } = useToast();
 
@@ -75,15 +77,24 @@ export default function DocumentsPage() {
   const folderInput = useRef<HTMLInputElement>(null);
   const corpusFileInput = useRef<HTMLInputElement>(null);
 
+  // ?q= comes from the header search, which navigates here from any page that
+  // is not a review. Without honouring it the header would look like it did
+  // nothing - the exact dead-end this search was fixed to remove.
+  const query = (search.get("q") ?? "").trim().toLowerCase();
+
   const filtered = useMemo(
     () =>
       documents.filter(
         (d) =>
           (type === "All types" || d.type === type) &&
           (status === "All statuses" || d.status === status) &&
-          (risk === "All risk levels" || d.risk === risk),
+          (risk === "All risk levels" || d.risk === risk) &&
+          (!query ||
+            d.name.toLowerCase().includes(query) ||
+            d.type.toLowerCase().includes(query) ||
+            d.status.toLowerCase().includes(query)),
       ),
-    [documents, type, status, risk],
+    [documents, type, status, risk, query],
   );
 
   function handlePicked(files: FileList | null, kind: UploadKind) {
@@ -316,5 +327,14 @@ function UploadProgressBar({ uploads }: { uploads: { pct: number; state: string 
         }}
       />
     </div>
+  );
+}
+
+/** `useSearchParams` requires a Suspense boundary to prerender statically. */
+export default function DocumentsPage() {
+  return (
+    <Suspense fallback={<div className="app-card" style={{ padding: 24, minHeight: 200 }} />}>
+      <DocumentsPageInner />
+    </Suspense>
   );
 }

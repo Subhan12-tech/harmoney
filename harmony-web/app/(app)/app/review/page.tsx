@@ -90,6 +90,27 @@ function ReviewPageInner() {
     setActiveMatch(0);
   }, [issueQuery]);
 
+  // The header search writes ?q=; this is the same search, so follow it. That
+  // makes both boxes one feature rather than two that disagree, and a link with
+  // ?q= reproduces the search for whoever opens it.
+  const urlQuery = search.get("q") ?? "";
+  useEffect(() => {
+    setIssueQuery(urlQuery);
+  }, [urlQuery]);
+
+  /** Set the query from the page's own box, keeping the URL (and so the header
+   *  box) in step. Local state updates first so typing stays responsive. */
+  const setQuery = useCallback(
+    (value: string) => {
+      setIssueQuery(value);
+      const next = new URLSearchParams();
+      if (params.id) next.set("id", params.id);
+      if (value.trim()) next.set("q", value);
+      router.replace(`/app/review?${next.toString()}`, { scroll: false });
+    },
+    [params.id, router],
+  );
+
   const currentSpan = searchSpans[activeMatch];
   /** The sentence around the selected hit - the context sent for source evidence. */
   const currentPassage = useMemo(
@@ -215,7 +236,7 @@ function ReviewPageInner() {
               id="draft-search"
               type="search"
               value={issueQuery}
-              onChange={(e) => setIssueQuery(e.target.value)}
+              onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
@@ -254,7 +275,7 @@ function ReviewPageInner() {
             {issueQuery && (
               <button
                 type="button"
-                onClick={() => setIssueQuery("")}
+                onClick={() => setQuery("")}
                 style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}
               >
                 Clear

@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Logo } from "@/components/Logo";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRole } from "@/context/RoleContext";
 import { useMe, initialsOf } from "@/context/MeContext";
 import { NOTIFICATIONS, getOrg } from "@/lib/data";
@@ -33,6 +33,42 @@ export function Header() {
   const { me } = useMe();
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+
+  /**
+   * The header search used to be a dead input - styled, placeholdered, and
+   * wired to nothing, so typing in it and pressing Enter did exactly nothing.
+   * It sits at the top of every page, so it is the box people reach for first.
+   *
+   * It now drives the search that belongs to the page you are on. On a review
+   * that is the draft search: the query goes into the URL as ?q=, the review
+   * page reads it, and the draft highlights and source evidence follow. That
+   * also makes a search shareable - the link reproduces it.
+   */
+  const searchParams = useSearchParams();
+  const onReview = pathname.startsWith("/app/review");
+  const [q, setQ] = useState("");
+
+  // Reflect the URL (back/forward, or a pasted link with ?q=).
+  useEffect(() => {
+    setQ(searchParams.get("q") ?? "");
+  }, [searchParams]);
+
+  const runSearch = useCallback(
+    (value: string) => {
+      setQ(value);
+      if (onReview) {
+        const id = searchParams.get("id") ?? "";
+        const next = new URLSearchParams();
+        if (id) next.set("id", id);
+        if (value.trim()) next.set("q", value);
+        // replace, not push: typing must not fill the back button with history.
+        router.replace(`/app/review?${next.toString()}`, { scroll: false });
+      } else if (value.trim()) {
+        router.push(`/app/documents?q=${encodeURIComponent(value)}`);
+      }
+    },
+    [onReview, router, searchParams],
+  );
 
   const org = getOrg(orgId);
   const displayName = me?.full_name?.trim() || me?.email || "Your account";
@@ -85,7 +121,15 @@ export function Header() {
         <input
           id="app-search"
           type="search"
-          placeholder="Search documents, evidence…"
+          value={q}
+          onChange={(e) => runSearch(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              runSearch(q);
+            }
+          }}
+          placeholder={onReview ? "Search this draft…" : "Search documents…"}
           style={{
             width: "100%",
             background: "var(--surface)",
