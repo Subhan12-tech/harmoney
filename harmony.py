@@ -282,10 +282,21 @@ SPLITTER = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
 # Measured, not guessed. Top-chunk similarity on the evaluation set:
 #   drafts with real contradictions   0.856 - 0.915
 #   draft whose topic is absent       0.818
-# 0.83 sits in that gap. It is a narrow gap on a small sample, so it is
-# configurable - raise it if false positives persist, lower it if real findings
-# start disappearing.
-RELEVANCE_FLOOR = float(os.getenv("HARMONY_RELEVANCE_FLOOR", "0.83"))
+#
+# 0.83 was chosen from that tiny sample - and it was too high. On real, varied
+# corpora, evidence that is genuinely about the draft routinely scores 0.72-0.83
+# (different phrasing, different chunk sizes, a draft that restates a prior
+# claim in its own words), so a strict 0.83 SILENTLY DROPPED the right evidence
+# before the model ever saw it and the review reported "no inconsistencies
+# found" on drafts that plainly contained several.
+#
+# 0.72 lets that evidence through. The false positives the floor was added to
+# prevent are caught later anyway: _supported() proves the quote is real and
+# _verify_issues() re-judges whether it actually contradicts, so the floor does
+# not have to carry that weight alone. Env-overridable via
+# HARMONY_RELEVANCE_FLOOR - raise it if false positives appear, lower it if real
+# findings go missing.
+RELEVANCE_FLOOR = float(os.getenv("HARMONY_RELEVANCE_FLOOR", "0.72"))
 
 # multi-tenancy: har org ka data alag rakhne ke liye. run_review() ise set karta hai,
 # retrieve/add functions ise metadata filter/tag ke tor par use karte hain.
